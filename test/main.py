@@ -195,7 +195,10 @@ async def tourn_stats(request: web.Request) -> web.Response:
     tourn = TOURNAMENTS.get(id)
     if not tourn:
         return json_response({"error": "No tournament with such id"}, status=404)
-    return json_response(asdict(tourn))
+    res = asdict(tourn)
+    res["games"] = [asdict(cast(GameResult, GAMES.get(id))) for id in tourn.gameIds]
+    res.pop("gameIds", None)
+    return json_response(res)
 
 
 async def tourns_list(request: web.Request) -> web.Response:
