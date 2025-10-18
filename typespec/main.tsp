@@ -18,12 +18,51 @@ model User {
   registered: boolean;
 }
 
+model UserInfo extends User {
+  email: string;
+  password: string;
+  /* TODO: Anything else? */
+}
+
 alias Username = User.username;
 
+@tag("User")
 interface Me {
   @route("/me")
   @useAuth(BearerAuth)
   get(): User | UnauthorizedResponse;
+}
+
+@tag("User")
+@route("/user")
+interface UserManagement {
+  @route("/oauth2/github")
+  oauthGithub(): void;
+
+  @route("/login")
+  @post
+  login(
+    @body userCreds: {
+      username: string;
+      password: string;
+      /* TODO: csrf? */
+    },
+  ): void | BadRequestResponse;
+
+  @route("/register")
+  @post
+  register(@body newUserInfo: UserInfo): void | BadRequestResponse;
+
+  @useAuth(BearerAuth)
+  @route("/update")
+  @patch
+  update(
+    @body userInfo: MergePatchUpdate<UserInfo>,
+  ): void | BadRequestResponse | UnauthorizedResponse;
+
+  @route("/logout")
+  @post
+  logout(): void;
 }
 
 @tag("Users")
@@ -192,6 +231,7 @@ model MatchmakeError {
 @useAuth(BearerAuth)
 interface Games {
   @route("/matchmake")
+  @post
   matchmake(): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/custom-game")
@@ -203,6 +243,7 @@ interface Games {
     | BadRequestResponse;
 
   @route("/join")
+  @post
   joinRoom(@path id: GameRoom.id):
     | void
     | MatchmakeError
@@ -210,6 +251,7 @@ interface Games {
     | UnauthorizedResponse;
 
   @route("/invite")
+  @post
   inviteUser(@query username: Username):
     | void
     | MatchmakeError
@@ -217,9 +259,11 @@ interface Games {
     | UnauthorizedResponse;
 
   @route("/leave")
+  @delete
   leaveRoom(): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/ready")
+  @post
   ready(@query unready?: boolean): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/reconnect")
