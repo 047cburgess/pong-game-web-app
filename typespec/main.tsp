@@ -14,15 +14,22 @@ model Game {
   }[];
 
   @doc("Username of the winner or `undefined` if draw")
-  winner?: Username;
+  winner?: User.Id | string;
+
+  tournamentId?: TournamentId;
 
   date: utcDateTime;
   duration: duration;
 }
 
+alias TournamentId = string;
+
 model Tournament {
-  @key id: string;
+  @key id: TournamentId;
   createdAt: utcDateTime;
+  participants: {
+	id: User.Id | string;
+	}[];
   games: {
     semifinal1: Game;
     semifinal2: Game;
@@ -308,32 +315,24 @@ namespace User {
 }
 
 /**
- * `QueueKey` is returned by all the endpoints that are opening game websocket connection.
+ * `GameKey` is returned by all the endpoints that are opening game websocket connection.
  * Since the websocket endpoint cannot have body,
- * `QueueKey` will be the first message send via the newly established websocket"
+ * `GameKey` will be the first message send via the newly established websocket"
  */
-model QueueKey {
+model GameKey {
   key: string;
-  roomId: string;
+  gameId: string;
   expires: utcDateTime;
 }
 
-alias GameWebsocket = Streams.Stream<{
-  id?: string;
-  type?: string;
-  data?: unknown;
-}>;
-
-alias GameRoomConnection = QueueKey & GameWebsocket;
-
-@doc("Endpoints for creating/joining games. See `QueueKey` for more details")
+@doc("Endpoints for creating/joining games. See `GameKey` for more details")
 @tag("Games")
 @route("/games")
 @useAuth(BearerAuth)
-interface Play {
+interface Games {
   @route("queue")
   @post
-  queue(): GameRoomConnection | UnauthorizedResponse;
+  queue(): GameKey | UnauthorizedResponse;
 
   @route("create")
   @post
@@ -346,9 +345,13 @@ interface Play {
       playerAliases?: string[];
       invitedPlayerIds?: User.Id[];
     },
-  ): GameRoomConnection | BadRequestResponse | UnauthorizedResponse;
+  ): GameKey | BadRequestResponse | UnauthorizedResponse;
+}
 
-  @route("create-tournament")
+@tag("Tournaments")
+@route("/tournaments")
+interface Tournaments {
+  @route("create")
   @post
   createTournament(
     @body body: {
@@ -357,29 +360,11 @@ interface Play {
     },
   ): void /* TODO */ | BadRequestResponse | UnauthorizedResponse;
 
-  @route("{roomId}/join")
-  @post
-  join(
-    @path roomId: string,
-  ): GameRoomConnection | UnauthorizedResponse | NotFoundResponse;
-
-  @route("{tournamentId}/join-tournament")
+  @route("{tournamentId}/join")
   @post
   joinTournament(
     @path tournamentId: string,
   ): void /* TODO */ | UnauthorizedResponse | NotFoundResponse;
-
-  @route("reconnect")
-  @post
-  reconnect(
-    @body body: {
-      queueKey: string;
-    },
-  ):
-    | GameRoomConnection
-    | BadRequestResponse
-    | UnauthorizedResponse
-    | NotFoundResponse;
 }
 
 model GameInvite {
