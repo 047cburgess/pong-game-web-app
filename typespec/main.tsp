@@ -1,161 +1,28 @@
 import "@typespec/http";
 import "@typespec/rest";
+import "@typespec/streams";
 
 using Http;
-@service(#{ title: "ft_transcendence" })
+@service(#{ title: "FtTranscendence" })
 namespace FtTranscendence;
-
-@error
-model Error {
-  code: int32;
-}
-
-model User {
-  @key username: string;
-  realname?: string;
-  avatarUrl?: url;
-  lastSeen?: utcDateTime;
-  registered: boolean;
-}
-
-model UserInfo extends User {
-  email: string;
-  password: string;
-  /* TODO: Anything else? */
-}
-
-alias Username = User.username;
-
-@tag("User")
-interface Me {
-  @route("/me")
-  @useAuth(BearerAuth)
-  get(): User | UnauthorizedResponse;
-}
-
-@tag("User")
-@route("/user")
-interface UserManagement {
-  @route("/oauth2/github")
-  oauthGithub(): void;
-
-  @route("/login")
-  @post
-  login(
-    @body userCreds: {
-      username: string;
-      password: string;
-      /* TODO: csrf? */
-    },
-  ): void | BadRequestResponse;
-
-  @route("/register")
-  @post
-  register(@body newUserInfo: UserInfo): void | BadRequestResponse;
-
-  @useAuth(BearerAuth)
-  @route("/update")
-  @patch
-  update(
-    @body userInfo: MergePatchUpdate<UserInfo>,
-  ): void | BadRequestResponse | UnauthorizedResponse;
-
-  @route("/logout")
-  @post
-  logout(): void;
-}
-
-@tag("Users")
-@route("/users")
-interface Users {
-  user(@path username: Username): User | NotFoundResponse;
-}
-
-@tag("Friends")
-@route("/friends")
-interface Friends {
-  @doc("Lists friends for a user")
-  @get
-  list(
-    @query
-    user: Username,
-
-    @minValue(1)
-    @query
-    page: uint32 = 1,
-
-    @minValue(1)
-    @maxValue(100)
-    @query
-    per_page: uint32 = 20,
-  ): User[] | NotFoundResponse;
-
-  @doc("Lists incoming friend requests for the current user")
-  @useAuth(BearerAuth)
-  @route("pending")
-  @get
-  pending(
-    @minValue(1)
-    @query
-    page: uint32 = 1,
-
-    @minValue(1)
-    @maxValue(100)
-    @query
-    per_page: uint32 = 20,
-  ): User[] | UnauthorizedResponse;
-
-  @doc("Sends or accepts a friend request")
-  @useAuth(BearerAuth)
-  @route("add/{username}")
-  @put
-  add(@path username: Username): void | NotFoundResponse | UnauthorizedResponse;
-
-  @doc("Deletes a friend or rejects a friend request")
-  @useAuth(BearerAuth)
-  @route("delete/{username}")
-  @delete
-  delete(
-    @path username: Username,
-  ): void | NotFoundResponse | UnauthorizedResponse;
-}
 
 model Game {
   @key id: string;
-  participants: {
-    user: User;
-    score: uint32;
-  };
+  players: {
+    user: User.PublicInfo;
+    score: int32;
+  }[];
 
-  @doc("Winner's username, or 'undefined' if the game ended in a draw")
+  @doc("Username of the winner or `undefined` if draw")
   winner?: Username;
 
   date: utcDateTime;
   duration: duration;
 }
 
-@tag("History")
-@route("/history/games")
-interface GameHistory {
-  @get list(
-    @query
-    user: Username,
-
-    @minValue(1)
-    @query
-    page: uint32 = 1,
-
-    @minValue(1)
-    @maxValue(25)
-    @query
-    per_page: uint32 = 15,
-  ): Game[] | NotFoundResponse;
-
-  @get game(@path id: Game.id): Game | NotFoundResponse;
-}
-
 model Tournament {
   @key id: string;
+  createdAt: utcDateTime;
   games: {
     semifinal1: Game;
     semifinal2: Game;
@@ -163,109 +30,360 @@ model Tournament {
   };
 }
 
-@tag("History")
-@route("/history/tournaments")
-interface TournamentHistory {
-  @get list(
-    @query
-    user: Username,
+model GameStats {
+  lifetime: {
+    wins: uint32;
+    draws: uint32;
+    losses: uint32;
+  };
+  daily: {
+    wins: uint32;
+    draws: uint32;
+    losses: uint32;
+    day: plainDate;
+  }[];
+  recentMatches: Game[];
+  recentTournaments: Tournament[];
+}
+
+@route("/users")
+@useAuth(BearerAuth)
+interface Users {
+  @tag("Users")
+  @get
+  user(@path username: Username):
+    | User.PublicInfo
+    | NotModifiedResponse
+    | NotFoundResponse
+    | UnauthorizedResponse;
+
+  @tag("Friends")
+  @route("{username}/friends")
+  @get
+  friends(@path username: Username | User.Id):
+    | User.PublicInfo[]
+    | NotModifiedResponse
+    | NotFoundResponse
+    | UnauthorizedResponse;
+
+  @tag("Game Stats")
+  @route("{username}/stats")
+  @get
+  stats(@path username: Username):
+    | GameStats
+    | NotModifiedResponse
+    | NotFoundResponse
+    | UnauthorizedResponse;
+
+  @tag("Game Stats")
+  @route("{username}/games")
+  @get
+  games(
+    @path username: Username,
 
     @minValue(1)
     @query
     page: uint32 = 1,
 
     @minValue(1)
-    @maxValue(25)
+    @maxValue(100)
     @query
-    per_page: uint32 = 15,
-  ): Tournament[] | NotFoundResponse;
+    per_page: uint32 = 25,
+  ): Game[] | NotModifiedResponse | NotFoundResponse | UnauthorizedResponse;
 
-  @get tournament(@path id: Tournament.id): Tournament | NotFoundResponse;
+  @tag("Game Stats")
+  @route("{username}/tournaments")
+  @get
+  tournaments(
+    @path username: Username,
+
+    @minValue(1)
+    @query
+    page: uint32 = 1,
+
+    @minValue(1)
+    @maxValue(50)
+    @query
+    per_page: uint32 = 20,
+  ):
+    | Tournament[]
+    | NotModifiedResponse
+    | NotFoundResponse
+    | UnauthorizedResponse;
+}
+alias Username = User.Username;
+
+@route("/user")
+namespace User {
+  alias Username = string;
+  alias Id = uint64;
+
+  @doc("Public facing info that can be mutated by the user")
+  model MutablePublicInfo {
+    username: Username;
+    realname?: string;
+    avatarUrl?: url;
+  }
+
+  model PublicInfo extends MutablePublicInfo {
+    @doc("id = 0 is reserved for non-registered users")
+    @key
+    id: Id;
+
+    lastSeen?: utcDateTime;
+    registeredSince?: utcDateTime;
+  }
+
+  model PrivateInfo {
+    email: string;
+  }
+
+  alias UserInfoReg = MutablePublicInfo &
+    PrivateInfo & {
+      password: string;
+    };
+  alias UserInfoPatch = MergePatchUpdate<UserInfoReg>;
+
+  @tag("Users")
+  @useAuth(BearerAuth)
+  interface User {
+    @get
+    get(): (PublicInfo &
+      PrivateInfo) | NotModifiedResponse | UnauthorizedResponse;
+
+    @patch
+    update(
+      @body body: UserInfoPatch,
+    ): void | BadRequestResponse | UnauthorizedResponse;
+
+    @delete
+    delete(): void | UnauthorizedResponse;
+  }
+
+  @tag("Auth")
+  interface Auth {
+    @route("login")
+    @post
+    login(
+      @body body: {
+        username: Username;
+        password: string;
+      },
+    ):
+      | void
+      | {
+          status: "2fa_required";
+        }
+      | BadRequestResponse
+      | UnauthorizedResponse;
+
+    @route("login/two-factor")
+    @post
+    twoFactor(
+      @body body: {
+        token: string;
+      },
+    ): void | BadRequestResponse | UnauthorizedResponse;
+
+    @route("logout")
+    @post
+    logout(): void | UnauthorizedResponse;
+
+    @route("register")
+    @post
+    register(
+      @body body: UserInfoReg,
+    ): void | BadRequestResponse | ConflictResponse;
+
+    @route("oauth/github")
+    @get
+    oauthGithub(): void;
+  }
+
+  @tag("Friends")
+  @useAuth(BearerAuth)
+  @route("/friends")
+  interface Friends {
+    @doc("List friends of the current user")
+    @get
+    list(): PublicInfo[] | NotModifiedResponse | UnauthorizedResponse;
+
+    @doc("Check friendship state between the current user and the target")
+    @get
+    state(@path username: Username):
+      | {
+          state: "friends" | "outgoing" | "incoming";
+        }
+      | NotModifiedResponse
+      | UnauthorizedResponse
+      | NotFoundResponse;
+
+    @doc("Remove a friend")
+    @delete
+    delete(
+      @path username: Username,
+    ): void | NotFoundResponse | UnauthorizedResponse;
+  }
+
+  @tag("Friends")
+  @useAuth(BearerAuth)
+  @route("/friends/requests")
+  interface FriendRequests {
+    @doc("List incoming friend requests")
+    @get
+    list(): PublicInfo[] | NotModifiedResponse | UnauthorizedResponse;
+
+    @doc("Accept a friend request")
+    @put
+    accept(@path username: Username):
+      | void
+      | UnauthorizedResponse
+      | NotFoundResponse
+      | ConflictResponse;
+
+    @doc("Reject a friend request from the target user")
+    @delete
+    reject(
+      @path username: Username,
+    ): void | UnauthorizedResponse | NotFoundResponse;
+
+    @doc("List outgoing friend requests")
+    @route("outgoing")
+    @get
+    listOutgoing(): PublicInfo[] | NotModifiedResponse | UnauthorizedResponse;
+
+    @doc("Send a friend request")
+    @route("outgoing")
+    @put
+    send(@path username: Username):
+      | void
+      | UnauthorizedResponse
+      | NotFoundResponse
+      | ConflictResponse;
+
+    @doc("Cancel an outgoing friend request")
+    @route("outgoing")
+    @delete
+    cancel(
+      @path username: Username,
+    ): void | UnauthorizedResponse | NotFoundResponse;
+  }
+
+  @tag("Game Stats")
+  @useAuth(BearerAuth)
+  interface History {
+    @doc("Game stats for the current user")
+    @route("stats")
+    @get
+    stats(): GameStats | NotModifiedResponse | UnauthorizedResponse;
+
+    @doc("Match history for the current user")
+    @route("games")
+    @get
+    games(
+      @minValue(1)
+      @query
+      page: uint32 = 1,
+
+      @minValue(1)
+      @maxValue(100)
+      @query
+      per_page: uint32 = 25,
+    ): Game[] | NotModifiedResponse | UnauthorizedResponse;
+
+    @doc("Tournament history for the current user")
+    @route("tournaments")
+    @get
+    tournaments(
+      @minValue(1)
+      @query
+      page: uint32 = 1,
+
+      @minValue(1)
+      @maxValue(100)
+      @query
+      per_page: uint32 = 25,
+    ): Tournament[] | NotModifiedResponse | UnauthorizedResponse;
+  }
 }
 
-model GameRoom {
-  id: string;
+/**
+ * `QueueKey` is returned by all the endpoints that are opening game websocket connection.
+ * Since the websocket endpoint cannot have body,
+ * `QueueKey` will be the first message send via the newly established websocket"
+ */
+model QueueKey {
+  key: string;
+  roomId: string;
+  expires: utcDateTime;
 }
 
-model GameParams {
-  @minValue(2)
-  @maxValue(4)
-  nPlayers?: uint32 = 2;
+alias GameWebsocket = Streams.Stream<{
+  id?: string;
+  type?: string;
+  data?: unknown;
+}>;
 
-  @minValue(16)
-  @maxValue(160)
-  ballSpeed?: uint32 = 130;
+alias GameRoomConnection = QueueKey & GameWebsocket;
 
-  @minValue(4000)
-  @maxValue(60000)
-  paddleSize?: uint32 = 17000;
-
-  @minValue(40)
-  @maxValue(500)
-  paddleSpeed?: uint32 = 320;
-
-  @minValue(0)
-  @maxValue(64)
-  paddleInertia?: float = 16;
-
-  @minValue(-5)
-  @maxValue(5)
-  paddleFriction?: float = 1.4;
-
-  @minValue(15000)
-  @maxValue(180000)
-  timeLimitMs?: uint32 = 120000;
-
-  startingHealth?: uint32;
-  pointsTarget?: uint32;
-}
-
-@error
-model MatchmakeError {
-  @statusCode statusCode: 409;
-  error: string;
-}
-
+@doc("Endpoints for creating/joining games. See `QueueKey` for more details")
 @tag("Games")
 @route("/games")
 @useAuth(BearerAuth)
-interface Games {
-  @route("/matchmake")
+interface Play {
+  @route("queue")
   @post
-  matchmake(): void | MatchmakeError | UnauthorizedResponse;
+  queue(): GameRoomConnection | UnauthorizedResponse;
 
-  @route("/custom-game")
+  @route("create")
   @post
-  customGame(@body gameParams?: GameParams):
-    | GameRoom
-    | MatchmakeError
+  create(
+    @body body: {
+      @minValue(2)
+      @maxValue(4)
+      numberOfPlayers: uint32;
+    },
+  ): GameRoomConnection | BadRequestResponse | UnauthorizedResponse;
+
+  @route("{roomId}/join")
+  @post
+  join(
+    @path roomId: string,
+  ): GameRoomConnection | UnauthorizedResponse | NotFoundResponse;
+
+  @route("reconnect")
+  @post
+  reconnect(
+    @body body: {
+      queueKey: string;
+    },
+  ):
+    | GameRoomConnection
+    | BadRequestResponse
     | UnauthorizedResponse
-    | BadRequestResponse;
+    | NotFoundResponse;
+}
 
-  @route("/join")
-  @post
-  joinRoom(@path id: GameRoom.id):
-    | void
-    | MatchmakeError
-    | NotFoundResponse
-    | UnauthorizedResponse;
+model GameInvite {
+  id?: string;
+  event: "GameInvite";
+  from: Username;
+  roomId: string;
+}
 
-  @route("/invite")
-  @put
-  inviteUser(@query username: Username):
-    | void
-    | MatchmakeError
-    | NotFoundResponse
-    | UnauthorizedResponse;
+model FriendRequest {
+  id?: string;
+  event: "FriendRequest";
+  from: Username;
+}
 
-  @route("/leave")
-  @delete
-  leaveRoom(): void | MatchmakeError | UnauthorizedResponse;
+alias ServerMessage = GameInvite | FriendRequest;
 
-  @route("/ready")
-  @put
-  ready(@query unready?: boolean): void | MatchmakeError | UnauthorizedResponse;
-
-  @route("/reconnect")
-  reconnect(): GameRoom | MatchmakeError | UnauthorizedResponse;
+@tag("Events")
+@useAuth(BearerAuth)
+interface Events {
+  @doc("SSE endpoint")
+  @route("/events")
+  @get
+  events(): Streams.Stream<ServerMessage> | UnauthorizedResponse;
 }
