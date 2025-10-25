@@ -1,0 +1,43 @@
+import { FriendManager, FriendRequestStatus } from "../Friend/FriendManager";
+import { MessagesQueueManager } from "../MesssageQueue/MessagesQueueManager";
+import { user_id } from "../UserData/User";
+import { UserManager } from "../UserData/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+
+@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
+export class AcceptFriendRequestCommand extends CommandBase {
+
+	constructor(
+		private userManager: UserManager,
+		private friendManager: FriendManager,
+		private messagesManager: MessagesQueueManager
+	) { super() }
+
+	 execute(receiver_id: user_id, sender_id: user_id) : CommandResult{
+		const receiver = this.userManager.getUserByID(receiver_id);
+		const receiverNode = this.friendManager.getUserNode(receiver_id);
+		const senderNode = this.friendManager.getUserNode(sender_id);
+
+		if(receiver_id === sender_id)
+			return {success:false, errors:[/* receiver = sender */]};
+		if (!receiver || !receiverNode || receiverNode.friends.has(sender_id) || !receiverNode.incomingRequests.has(sender_id)) 
+			return {success: false, errors: [/* placeholder separate issue */]};
+		
+		receiverNode.friends.add(sender_id);
+		receiverNode.incomingRequests.delete(sender_id);
+		
+		this.friendManager.upsertUpdate({ 
+			sender_id: sender_id, 
+			receiver_id: receiver_id, 
+			status: FriendRequestStatus.ACCEPTED 
+		});
+
+		if (senderNode) {
+			this.messagesManager.push(sender_id, {type: "FriendRequest Accepted", data : receiver.name})
+			senderNode.outgoingRequests.delete(receiver_id);
+			senderNode.friends.add(receiver_id);
+		}
+
+		return {success:true, errors:[]};
+	}
+}
