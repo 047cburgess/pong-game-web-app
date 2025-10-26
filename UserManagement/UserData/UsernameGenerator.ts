@@ -49,13 +49,13 @@ function toBase65(num: number): string {
 }
 
 /**
-	Format : <Adjectif><Nom>_<TimestampBase94>
+	Format : <Adjectif><Nom>_<TimestampBase65>
 */
 export function generateUsername(timestamp: number): string {
-	const tsBase94 = toBase65(timestamp);
+	const tsBase65 = toBase65(timestamp);
 
 	const adjective = choice(ADJECTIVES);
 	const noun = choice(NOUNS);
 
-	return `${adjective}${noun}_${tsBase94}`;
+	return `${adjective}${noun}_${tsBase65}`;
 }

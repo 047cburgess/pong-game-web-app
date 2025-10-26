@@ -7,7 +7,7 @@ import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
 import { RefuseFriendRequestCommand } from "./RefuseFriendRequestCommand";
 import { RemoveFriendCommand } from "./RemoveFriendCommand";
 
-
+@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
 export class RemoveUserCommand extends CommandBase {
 	constructor(
 		private userManager: UserManager,

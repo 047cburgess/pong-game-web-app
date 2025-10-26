@@ -3,10 +3,21 @@ import { ManagerRegistry } from "../ManagerRegistry";
 import { user_id } from "../UserData/User";
 
 export interface Messages {
-    type: string;
-	data?: any;
-    //will add more data like frienddata that changed etc...
+    type: MessagesTypes;
+	data?: any;    
 }
+
+export enum MessagesTypes {
+	FRIENDREQUEST_ACCEPTED = "FRIENDREQUEST_ACCEPTED",
+	FRIENDREQUEST_REFUSED = "FRIENDREQUEST_REFUSED",
+	FRIENDREQUEST_CANCELED = "FRIENDREQUEST_CANCELED",
+	FRIENDREQUEST_RECEIVED = "FRIENDREQUEST_RECEIVED",
+	FRIEND_UPDATE_USERNAME = "FRIEND_UPDATE_USERNAME",
+	FRIEND_UPDATE_STATUS = "FRIEND_UPDATE_STATUS",
+	FRIEND_UPDATE_REMOVED = "FRIEND_UPDATE_REMOVED"
+} 
+
+
 
 @ManagerRegistry.register()
 export class MessagesQueueManager extends ManagerBase {
@@ -40,7 +51,7 @@ export class MessagesQueueManager extends ManagerBase {
     // ---------------- Persistence ----------------
 
 
-     saveAll() {
+    saveAll() {
 		//herited but not implemented, probably should change the abstract class i use
     }
 

@@ -4,7 +4,7 @@ import { CommandBase, CommandManager } from "./CommandManager";
 import { CommandResult } from "./CommandManager";
 import { OnUserSeenCommand } from "./OnUserSeenCommand";
 import { FriendManager } from "../Friend/FriendManager";
-import { MessagesQueueManager } from "../MesssageQueue/MessagesQueueManager";
+import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
 
 export interface UserValidationResult {
 	success: boolean;
@@ -33,10 +33,6 @@ export class EditUsernameCommand extends CommandBase {
 		private friendManager: FriendManager,
 		private messageManager: MessagesQueueManager) { super(); }
 
-	/*
-	idk if i prefer specific errors or just success/fail
-	specific errors to indicate to the user what are the problems with his name
-	*/
 	private validateUsername(username: string): UserValidationResult {
 		const result: UserValidationResult = { success: false, errors: [] };
 
@@ -54,11 +50,10 @@ export class EditUsernameCommand extends CommandBase {
 	private notifyFriends(user_id: user_id, previousname: string, username: string) {
 		for (const friend of this.friendManager.getFriendList(user_id)) {
 			if (this.userManager.hasCached(friend))
-				this.messageManager.push(friend, { type: "username update", data: { prevname: previousname, newname: username } });
+				this.messageManager.push(friend, { type: MessagesTypes.FRIEND_UPDATE_USERNAME, data: { prevname: previousname, newname: username } });
 		}
 	}
 
-	//will probably not return UserData still not certain
 	execute(user_id: user_id, username: string): CommandResult {
 		let previousname = "";
 		const validation = this.validateUsername(username);
@@ -75,7 +70,7 @@ export class EditUsernameCommand extends CommandBase {
 		if (user) {
 			previousname = user.name;
 			user.name = username;
-			this.userManager.saveUser(user_id); //no  we send back the data saves happen whenever
+			this.userManager.saveUser(user_id); //need to decide when to save, do i prefer batch operation or on modification saves
 		}
 		else
 			return { success: false, errors: [UsernameErrors.DOES_NOT_EXIST] };
@@ -84,9 +79,3 @@ export class EditUsernameCommand extends CommandBase {
 		return { success: true, errors: [] };
 	}
 }
-
-/*
-	check if the username is valid on username changed 
-	spread the info to connected friends
-
-*/

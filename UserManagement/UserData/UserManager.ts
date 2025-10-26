@@ -86,7 +86,7 @@ export class UserManager extends ManagerBase {
 		const timestamp = Date.now();
 		const user: UserData = {
 			user_id: id,
-			name: name ?? generateUsername(timestamp), //idk should we give a fake randomusername until chaged ?
+			name: name ?? generateUsername(timestamp), //idk should we give a random username until chaged ?
 			status: UserStatus.ONLINE,
 			last_seen: timestamp,
 		};

@@ -87,6 +87,9 @@ export class FriendManager extends ManagerBase {
 	upsertUpdate(update: FriendRequest) {
 		const { sender_id: sender, receiver_id: receiver, status } = update;
 
+		if (status === FriendRequestStatus.REFUSED)
+			this.toremove.push({ a: sender, b: receiver });
+		
 		let idx = this.senderIndex.get(sender)?.get(receiver);
 		if (idx !== undefined) {
 			const req = this.requests[idx];
@@ -106,8 +109,7 @@ export class FriendManager extends ManagerBase {
 
 		this.updateNodes(sender, receiver, null, status);
 
-		if (status === FriendRequestStatus.REFUSED)
-			this.toremove.push({ a: sender, b: receiver });
+
 	}
 
 	private updateNodes(sender: user_id, receiver: user_id, oldStatus: FriendRequestStatus | null, newStatus: FriendRequestStatus) {
@@ -138,7 +140,7 @@ export class FriendManager extends ManagerBase {
 	}
 	// ----------------- Accessors -----------------
 
-
+	//could probably make it try to load the usernode if not found 
 	getUserNode(user_id: user_id): UserNode | undefined {
 		return this.graph.get(user_id);
 	}
@@ -151,6 +153,9 @@ export class FriendManager extends ManagerBase {
 		return Array.from(this.graph.get(user_id)?.incomingRequests ?? []);
 	}
 
+	getOutgoingRequests(user_id: user_id): user_id[] {
+		return Array.from(this.graph.get(user_id)?.outgoingRequests ?? []);
+	}
 	// ----------------- Save -----------------
 
 

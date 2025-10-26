@@ -1,15 +1,17 @@
 import { FriendManager, FriendRequest, FriendRequestStatus } from "../Friend/FriendManager";
-import { MessagesQueueManager } from "../MesssageQueue/MessagesQueueManager";
+import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
 import { user_id } from "../UserData/User";
 import { UserManager } from "../UserData/UserManager";
 import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
 import { AcceptFriendRequestCommand } from "./AcceptFriendRequestCommand";
 
 export enum FriendRequestError {
-    SelfRequest = "SelfRequest",
-    UndefinedUser = "UndefinedUser",
-    AlreadyFriend = "AlreadyFriend",
-    AlreadyRequest = "AlreadyRequested",
+    REQUEST_SELF = "SelfRequest",
+    REQUEST_ALREADY = "AlreadyRequested",
+	REQUEST_UNDEFINED = "UndefinedRequest",
+	USER_UNDEFINED = "UndefinedUser",
+	FRIEND_ALREADY = "AlreadyFriend",
+	FRIEND_NOT = "NotFriend"
 }
 
 @CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
@@ -26,14 +28,14 @@ export class RequestFriendCommand extends CommandBase {
 		const senderNode = this.friendManager.getUserNode(sender_id);
 
 		if (sender_id === receiver_id)
-			return { success: false, errors: [FriendRequestError.SelfRequest] };
+			return { success: false, errors: [FriendRequestError.REQUEST_SELF] };
 
 		if (!sender || !senderNode)
-			return { success: false, errors: [FriendRequestError.UndefinedUser] }; //should never happen since we assume onUserSeen as prehandler 
+			return { success: false, errors: [FriendRequestError.USER_UNDEFINED] }; //should never happen since we assume onUserSeen as prehandler 
 		if(senderNode.friends.has(receiver_id))
-			return { success: false, errors: [FriendRequestError.AlreadyFriend]};
+			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY]};
 		if(senderNode.outgoingRequests.has(receiver_id))
-			return { success: false, errors: [FriendRequestError.AlreadyRequest]}; // should not happen either if client isn't fraudulent 
+			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY]}; // should not happen either if client isn't fraudulent 
 		
 		if (senderNode.incomingRequests.has(receiver_id)) {
 			return CommandManager.get(AcceptFriendRequestCommand).execute(sender_id, receiver_id);
@@ -44,9 +46,9 @@ export class RequestFriendCommand extends CommandBase {
 			receiver_id: receiver_id,
 			status: FriendRequestStatus.PENDING,
 		});
-		
+
 		if (this.userManager.hasCached(receiver_id)) {
-			this.messageManager.push(receiver_id, { type: "Friend Request Received", data: { from: sender.name } })
+			this.messageManager.push(receiver_id, { type: MessagesTypes.FRIENDREQUEST_RECEIVED, data: { from: sender.name } })
 		}
 
 		return { success: true, errors: [] };

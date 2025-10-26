@@ -1,5 +1,5 @@
 import { FriendManager } from "../Friend/FriendManager";
-import { MessagesQueueManager } from "../MesssageQueue/MessagesQueueManager";
+import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
 import { user_id } from "../UserData/User";
 import { UserManager } from "../UserData/UserManager";
 import { UserStatus } from "../UserData/UserStatus";
@@ -21,7 +21,7 @@ export class OnUserSeenCommand extends CommandBase {
 			const friends = this.friendManager.getFriendList(userId);
 			for (const friendId of friends) {
 				if (this.userManager.hasCached(friendId)) {
-					this.notifManager.push(friendId, { type: "friend status update", data: this.userManager.toPublic(user) });
+					this.notifManager.push(friendId, { type: MessagesTypes.FRIEND_UPDATE_STATUS, data: this.userManager.toPublic(user) });
 				}
 			}
 		}
