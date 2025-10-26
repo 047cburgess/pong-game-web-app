@@ -9,7 +9,7 @@ namespace FtTranscendence;
 model Game {
   @key id: string;
   players: {
-    user: User.PublicInfo;
+    id: User.Id | string;
     score: int32;
   }[];
 
@@ -342,14 +342,32 @@ interface Play {
       @minValue(2)
       @maxValue(4)
       numberOfPlayers: uint32;
+
+      playerAliases?: string[];
+      invitedPlayerIds?: User.Id[];
     },
   ): GameRoomConnection | BadRequestResponse | UnauthorizedResponse;
+
+  @route("create-tournament")
+  @post
+  createTournament(
+    @body body: {
+      playerAliases?: string[];
+      invitedPlayerIds?: User.Id[];
+    },
+  ): void /* TODO */ | BadRequestResponse | UnauthorizedResponse;
 
   @route("{roomId}/join")
   @post
   join(
     @path roomId: string,
   ): GameRoomConnection | UnauthorizedResponse | NotFoundResponse;
+
+  @route("{tournamentId}/join-tournament")
+  @post
+  joinTournament(
+    @path tournamentId: string,
+  ): void /* TODO */ | UnauthorizedResponse | NotFoundResponse;
 
   @route("reconnect")
   @post
