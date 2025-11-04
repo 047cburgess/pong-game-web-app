@@ -121,3 +121,48 @@ export const declineGameSchema = {
     }
   }
 };
+
+// POST /games/{gameId}/view - Get viewing key for tournament game
+export const viewGameSchema = {
+  params: {
+    type: 'object',
+    required: ['gameId'],
+    properties: {
+      gameId: { type: 'string' }
+    }
+  },
+  response: {
+    200: {
+      type: 'object',
+      required: ['viewingKey', 'gameId'],
+      properties: {
+        viewingKey: { type: 'string' },
+        gameId: { type: 'string' }
+      }
+    },
+    401: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' }
+      }
+    },
+    403: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' }
+      }
+    },
+    404: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' }
+      }
+    },
+    409: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' }
+      }
+    }
+  }
+};

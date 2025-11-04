@@ -7,17 +7,19 @@ import gameRegistryPlugin from './managers/GameRegistry.plugin';
 import gameHistoryManagerPlugin from './managers/GameHistoryManager.plugin';
 import customGameManagerPlugin from './managers/CustomGameManager.plugin';
 import queueManagerPlugin from './managers/QueueManager.plugin';
+import tournamentManagerPlugin from './managers/TournamentManager.plugin';
 import eventManagerPlugin from './managers/EventManager.plugin';
 import webhooksRoutes from './routes/webhooks/game-service.routes';
 import customGamesRoutes from './routes/custom-games.routes';
 import queueRoutes from './routes/queue.routes';
 import gameHistoryRoutes from './routes/game-history.routes';
 import eventsRoutes from './routes/events.routes';
+import tournamentRoutes from './routes/tournament.routes';
 
 
 const envToLogger = {
   development: {
-    level: process.env.LOG_LEVEL || 'info',
+    level: process.env.LOG_LEVEL || 'debug',
     transport: {
       target: 'pino-pretty',
       options: {
@@ -77,11 +79,13 @@ fastify.register(gameHistoryManagerPlugin);
 fastify.register(eventManagerPlugin);
 fastify.register(customGameManagerPlugin);
 fastify.register(queueManagerPlugin);
+fastify.register(tournamentManagerPlugin);
 fastify.register(webhooksRoutes);
 fastify.register(customGamesRoutes);
 fastify.register(queueRoutes);
 fastify.register(gameHistoryRoutes);
 fastify.register(eventsRoutes);
+fastify.register(tournamentRoutes);
 
 fastify.listen({ port: config.PORT, host: '0.0.0.0'}, (err, address) => {
 	if (err) {

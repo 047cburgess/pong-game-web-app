@@ -97,7 +97,6 @@ export interface TournamentParticipationDB {
 // webhook receive
 export interface GameResultWebhook {
 	id: GameId;
-	mode: GameMode;
 	players: Player[]; //id + score
 	winnerId?: string;
 	date: Date;
@@ -140,12 +139,108 @@ export interface CustomGame {
 	createdAt: Date;
 }
 
-// INTERNAL API TYPES
+// INTERNAL API TYPES (requests to game service)
+// gameMode is omitted - derived from endpoint path
 export interface NewGameRequest {
 	nPlayers: number;
-	gameMode: GameMode;
 }
 
 export interface NewGameResponse {
-	keys: GameKey[];
+	gameKeys: GameKey[];
 }
+
+export interface NewTournamentGameRequest {
+	nPlayers: number;
+}
+
+export interface NewTournamentGameResponse {
+	gameKeys: GameKey[];
+	viewingKey: string;
+}
+
+// Tournament API Req/Res
+export interface NewTournamentRequest {
+	invitedPlayers?: UserId[];
+}
+
+export interface NewTournamentResponse {
+	tournamentId: TournamentId;
+	invitedPlayers: UserId[];
+}
+
+export interface InviteToTournamentRequest {
+	tournamentId: TournamentId;
+	toInvite: UserId[];
+}
+
+export interface InviteToTournamentResponse {
+	tournamentId: TournamentId;
+	invitedPlayers: UserId[];
+}
+
+export interface JoinTournamentRequest {
+	tournamentId: TournamentId;
+}
+
+export interface JoinTournamentResponse {
+	tournamentId: TournamentId;
+}
+
+export type TournamentStatus = 'waiting' | 'ready' | 'semi1' | 'semi2' | 'final' | 'complete';
+export type TournamentGameStatus = 'pending' | 'ready' | 'complete';
+
+export interface Tournament {
+	id: TournamentId;
+	hostId: UserId;
+	status: TournamentStatus;
+	invitedPlayers: UserId[];
+	registeredPlayers: UserId[];
+	games: {
+		semi1?: GameId;
+		semi2?: GameId;
+		final?: GameId;
+	}
+	winner?: UserId;
+	createdAt: Date;
+}
+
+export interface TournamentStatusAPI {
+	tournamentId: TournamentId;
+	status: TournamentStatus;
+	registeredPlayers: UserId[];
+	games: {
+		semi1: {
+			id?: GameId;
+			status: TournamentGameStatus;
+			players: Player[];
+			winner?: UserId;
+		};
+		semi2: {
+			id?: GameId;
+			status: TournamentGameStatus;
+			players: Player[];
+			winner?: UserId;
+		};
+		final: {
+			id?: GameId;
+			status: TournamentGameStatus;
+			players: Player[];
+			winner?: UserId;
+		};
+	};
+}
+
+export interface TournamentGame {
+	id: GameId;
+	tournamentId: TournamentId;
+	stage: 'semi1' | 'semi2' | 'final';
+	status: GameStatus;
+	players?: [Player, Player];
+	gameKeys?: GameKey[];
+	viewingKey?: string;
+	createdAt: Date;
+	winner?: UserId;
+	gameResult?: GameResultWebhook;
+}
+
+

@@ -56,12 +56,11 @@ export class QueueManager {
 			this.log.info({ userId }, 'Creating new game for first player');
 
 			const request: NewGameRequest = {
-				nPlayers: 2,
-				gameMode: 'classic'
+				nPlayers: 2
 			};
 
 			const response = await this.gameClient.createGame(request);
-			const gameKeys = response.keys;
+			const gameKeys = response.gameKeys;
 			const gameId = gameKeys[0].gameId;
 
 			this.gameRegistry.register(gameId, 'queue');

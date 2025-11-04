@@ -11,12 +11,8 @@ export const gameResultWebhookSchema = {
   },
   body: {
     type: 'object',
-    required: ['mode', 'players', 'date', 'duration'],
+    required: ['players', 'date', 'duration'],
     properties: {
-      mode: {
-        type: 'string',
-        enum: ['classic', 'tournament']
-      },
       players: {
         type: 'array',
         minItems: 2,
@@ -25,13 +21,13 @@ export const gameResultWebhookSchema = {
           type: 'object',
           required: ['id', 'score'],
           properties: {
-            id: { type: 'string' },
+            id: { type: 'number' },
             score: { type: 'number' }
           }
         }
       },
       winnerId: {
-        type: 'string'
+        type: 'number'
       },
       date: {
         type: 'string',

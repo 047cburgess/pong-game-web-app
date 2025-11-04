@@ -1,4 +1,5 @@
 USER IDs in SEED data -> 1 - 5
+// not able to save games any more as protections added.
 
 GAME HISTORY
 
@@ -56,7 +57,6 @@ curl -X POST http://localhost:3000/queue/join -H "x-user-id: 501"
 curl -X POST http://localhost:3000/webhooks/games/GAME_ID/result \
   -H "Content-Type: application/json" \
   -d '{
-    "mode": "classic",
     "players": [
       {"id": 500, "score": 15},
       {"id": 501, "score": 12}

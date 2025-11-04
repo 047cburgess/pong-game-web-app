@@ -1,7 +1,18 @@
 services:
+  #game-service:
+    #build: ./backend/game_service
+    #volumes:
+     # - ./backend/game_service:/app
+    #  - /app/node_modules
+    #ports:
+     # - "3001:3000"
+    #command: npm run dev
+   # networks:
+  #    - transcendence
+ #   environment:
+#      - LISTEN_PORT=3000
   matchmaking-service:
     build: ./backend/matchmaking_service
-    command: npm run dev
     volumes:
       - ./backend/matchmaking_service:/app
       - /app/node_modules
@@ -18,6 +29,9 @@ services:
       - DATABASE_PATH=${MATCHMAKING_DATABASE_PATH}
       - GAME_SERVICE_URL=${GAME_SERVICE_URL}
       - SERVICE_URL=${MATCHMAKING_SERVICE_URL}
+    command: npm run dev
+    #depends_on:
+     # - game-service
 
 networks:
   transcendence:

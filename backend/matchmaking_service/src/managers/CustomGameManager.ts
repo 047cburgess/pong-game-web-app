@@ -31,7 +31,13 @@ export class CustomGameManager {
 		this.db = db;
 		this.games = new Map();
 	}
-	
+
+	private getGame(gameId: GameId): CustomGame {
+		const game = this.games.get(gameId);
+		if (!game) throw new NotFoundError('Game not found');
+		return game;
+	}
+
 	/**
 	 * Create a custom game and invite players
 	 * - Requests a game from game service with specified capacity
@@ -56,11 +62,10 @@ export class CustomGameManager {
 		if (playersToInvite.length < capacity - 1)
 			throw new BadRequestError('Number of players is less than the room size');
 		const request: NewGameRequest = {
-			nPlayers: capacity,
-			gameMode: "classic"
+			nPlayers: capacity
 		};
 		const response = await this.gameClient.createGame(request);
-		const gameKeys: GameKey[] = response.keys;
+		const gameKeys: GameKey[] = response.gameKeys;
 		const gameId: GameId = gameKeys[0].gameId;
 
 		// for routing
@@ -107,10 +112,7 @@ export class CustomGameManager {
 	 * @throws ConflictError if player already accepted or game already started
 	 */
 	acceptInvite(gameId: GameId, playerId: UserId): GameKey {
-		const game = this.games.get(gameId);
-		if (!game) {
-			throw new NotFoundError('Game not found');
-		}
+		const game = this.getGame(gameId);
 
 		if (!game.invitedPlayers.includes(playerId)) {
 			throw new ForbiddenError('You were not invited to this game');
@@ -153,16 +155,11 @@ export class CustomGameManager {
 	 * @throws ForbiddenError if player wasn't invited
 	 */
 	declineInvite(gameId: GameId, playerId: UserId): void {
-		const game = this.games.get(gameId);
-		if (!game) {
-			throw new NotFoundError('Game not found');
-		}
+		const game = this.getGame(gameId);
 
 		if (!game.invitedPlayers.includes(playerId)) {
 			throw new ForbiddenError('You were not invited to this game');
 		}
-
-		game.invitedPlayers = game.invitedPlayers.filter(id => id !== playerId);
 
 		this.log.info({ gameId, playerId, remaining: game.invitedPlayers.length },
 			'Player declined custom game invite');
@@ -180,10 +177,6 @@ export class CustomGameManager {
 		} else {
 			this.log.debug({ gameId, playerId, hostId: game.hostId }, 'Host offline, decline notification not sent');
 		}
-	}
-
-	getGame(gameId: GameId): CustomGame | undefined {
-		return this.games.get(gameId);
 	}
 
 	/**
@@ -218,11 +211,11 @@ export class CustomGameManager {
 				: player.id === gameResult.winnerId ? 'win' : 'loss'
 		}));
 
+		this.gameRegistry.unregister(gameResult.id);
 		this.db.saveGame(gameDB, participations);
 		this.log.info({ gameId: gameResult.id }, 'Custom game saved to database');
 
 		this.games.delete(gameResult.id);
-		this.gameRegistry.unregister(gameResult.id);
 		this.log.info({ gameId: gameResult.id }, 'Custom game completed and cleaned up');
 	}
 }

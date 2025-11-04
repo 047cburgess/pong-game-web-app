@@ -2,7 +2,6 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { GameResultWebhook } from '../../types';
 import { gameResultWebhookSchema } from './game-service.schemas';
 
-// TODO: update schema on typespec -> more standard apparently to just return 200 with whatever message rather than different status codes.
 export default async function webhooksRoutes(fastify: FastifyInstance) {
 	fastify.post<{
 		Params: { gameId: string };
@@ -13,7 +12,6 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
 		const gameId = req.params.gameId;
 		const gameResult: GameResultWebhook = {
 			id: gameId,
-			mode: req.body.mode,
 			players: req.body.players,
 			winnerId: req.body.winnerId,
 			date: req.body.date,
@@ -35,9 +33,8 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
 					fastify.queueManager.handleGameComplete(gameResult);
 					break;
 				case 'tournament':
-					// TODO: implement when tournament manager is ready
-					fastify.log.warn({ gameId }, 'Received result for tournament game (not yet supported)');
-					return { message: 'Tournament games not yet supported' };
+					fastify.tournamentManager.handleGameComplete(gameResult);
+					break;
 			}
 
 			return { message: 'Game result processed successfully' };

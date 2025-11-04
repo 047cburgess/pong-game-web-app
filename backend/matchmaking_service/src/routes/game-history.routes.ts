@@ -3,7 +3,6 @@ import { getPlayerGamesSchema, getPlayerStatsSchema, getGameByIdSchema, getPlaye
 import { UserId, GameId, TournamentId } from '../types';
 import { UnauthorizedError } from '../utils/errors';
 
-//TODO: check schemas vs compiled vaiva file -> check script working at school
 //TODO: proper auth prehandler
 export default async function gameHistoryRoutes(fastify: FastifyInstance) {
 

@@ -18,6 +18,7 @@ async function customGameManagerPlugin(fastify: FastifyInstance) {
 		fastify.db
 	);
 	fastify.decorate('customGameManager', manager);
+	fastify.log.info('CustomGameManager initialized');
 }
 
 export default fp(customGameManagerPlugin, {name: 'customGameManager', dependencies: ['gameClient', 'eventManager', 'gameRegistry', 'database']});

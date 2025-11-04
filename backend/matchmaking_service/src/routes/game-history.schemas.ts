@@ -1,4 +1,3 @@
-// Reusable game schema for nested tournament structure
 const gameSchema = {
 	type: 'object',
 	properties: {
