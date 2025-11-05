@@ -5,7 +5,7 @@ import fs from 'fs';
 import seedDatabase from './seed';
 import { prepareStatements } from './statements';
 import { createTablesSQL } from './schema';
-import { UserId, GameId, TournamentId, GameResultDB, GameResultAPI, TournamentResultAPI, GameParticipationDB, TournamentResultDB, TournamentParticipationDB, DailyPlayerStatsAPI, PlayerStatsAPI } from '../types';
+import { UserId, GameId, TournamentId, GameResultDB, GameResultAPI, TournamentResultAPI, GameParticipationDB, TournamentResultDB, TournamentParticipationDB, DailyPlayerStatsAPI, PlayerStatsAPI, LocalGameDB, LocalGameParticipantDB, LocalTournamentDB } from '../types';
 import type { FastifyInstance } from 'fastify';
 
 
@@ -15,6 +15,8 @@ declare module 'fastify' {
       // inserts
       saveGame(game: GameResultDB, participations: GameParticipationDB[]): void;
       saveTournament(tournament: TournamentResultDB, participations: TournamentParticipationDB[]): void;
+      saveLocalGame(game: LocalGameDB, participants: LocalGameParticipantDB[]): void;
+      saveLocalTournament(tournament: LocalTournamentDB): void;
 
       // selects (unprocessed rows -> processing is done in GameHistoryManager)
       getGamesByPlayer(userId: UserId, limit: number, offset: number): any[];
@@ -93,6 +95,59 @@ async function dbPlugin(fastify: FastifyInstance) {
         transaction();
       } catch (err) {
         fastify.log.error({ err, tournamentId: tournament.id }, 'DB error: saveTournament failed');
+        throw err;
+      }
+    },
+
+    saveLocalGame(game: LocalGameDB, participants: LocalGameParticipantDB[]): void {
+      const transaction = db.transaction(() => {
+        stmts.insertLocalGame.run(
+          game.id,
+          game.hostId,
+          game.date.toISOString(),
+          game.duration,
+          game.winnerType || null,
+          game.winnerGuestName || null
+        );
+        participants.forEach((participant) => {
+          stmts.insertLocalGameParticipant.run(
+            game.id,
+            participant.position,
+            participant.guestName || null,
+            participant.score
+          );
+        });
+      });
+
+      try {
+        transaction();
+      } catch (err) {
+        fastify.log.error({ err, gameId: game.id }, 'DB error: saveLocalGame failed');
+        throw err;
+      }
+    },
+
+    saveLocalTournament(tournament: LocalTournamentDB): void {
+      const transaction = db.transaction(() => {
+        stmts.insertLocalTournament.run(
+          tournament.id,
+          tournament.hostId,
+          tournament.guest1Name,
+          tournament.guest2Name,
+          tournament.guest3Name,
+          tournament.semi1Id,
+          tournament.semi2Id,
+          tournament.finalId,
+          tournament.winnerType,
+          tournament.winnerName,
+          tournament.date.toISOString()
+        );
+      });
+
+      try {
+        transaction();
+      } catch (err) {
+        fastify.log.error({ err, tournamentId: tournament.id }, 'DB error: saveLocalTournament failed');
         throw err;
       }
     },

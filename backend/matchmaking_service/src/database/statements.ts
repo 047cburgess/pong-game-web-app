@@ -162,6 +162,22 @@ export function prepareStatements(db: Database.Database) {
       WHERE t.tournament_id = ?
       GROUP BY t.tournament_id
     `),
+
+    // Local game statements
+    insertLocalGame: db.prepare(`
+      INSERT INTO local_games (game_id, host_id, date, duration, winner_type, winner_guest_name)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `),
+
+    insertLocalGameParticipant: db.prepare(`
+      INSERT INTO local_game_participants (game_id, position, guest_name, score)
+      VALUES (?, ?, ?, ?)
+    `),
+
+    insertLocalTournament: db.prepare(`
+      INSERT INTO local_tournaments (tournament_id, host_id, guest1_name, guest2_name, guest3_name, semi1_id, semi2_id, final_id, winner_type, winner_name, date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `),
   };
 }
 

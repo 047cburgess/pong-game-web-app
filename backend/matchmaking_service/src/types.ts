@@ -103,12 +103,57 @@ export interface GameResultWebhook {
 	duration: string;
 }
 
+// LOCAL GAME TYPES
 export interface LocalGameSubmission {
-	gameId: GameId;
-	players: Player[];
-	winnerId?: UserId;
+	gameId: GameId; // from game service
+	players: {
+		id: UserId | string; // UserId for host, string for guests
+		score: number;
+	}[];
+	winnerId?: UserId | string;
+	duration: string;
+}
+
+export interface LocalTournamentSubmission {
+	// NO tournamentId - backend generates it
+	participants: {
+		id: UserId | string;
+	}[];
+	games: {
+		semifinal1: LocalGameSubmission;
+		semifinal2: LocalGameSubmission;
+		final: LocalGameSubmission;
+	};
+}
+
+// for database storage
+export interface LocalGameDB {
+	id: GameId;
+	hostId: UserId;
 	date: Date;
 	duration: string;
+	winnerType?: 'host' | 'guest' | null;
+	winnerGuestName?: string;
+}
+
+export interface LocalGameParticipantDB {
+	position: number; // 1 = host, 2-4 = guests
+	guestName?: string;
+	score: number;
+}
+
+export interface LocalTournamentDB {
+	id: string;
+	hostId: UserId;
+	guest1Name: string;
+	guest2Name: string;
+	guest3Name: string;
+	semi1Id: GameId;
+	semi2Id: GameId;
+	finalId: GameId;
+	winnerType: 'host' | 'guest';
+	winnerName: string;
+	date: Date;
 }
 
 // SSE EVENT TYPES - outgoing

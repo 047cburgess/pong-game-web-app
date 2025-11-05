@@ -15,6 +15,7 @@ import queueRoutes from './routes/queue.routes';
 import gameHistoryRoutes from './routes/game-history.routes';
 import eventsRoutes from './routes/events.routes';
 import tournamentRoutes from './routes/tournament.routes';
+import localGamesRoutes from './routes/local-games.routes';
 
 
 const envToLogger = {
@@ -86,6 +87,7 @@ fastify.register(queueRoutes);
 fastify.register(gameHistoryRoutes);
 fastify.register(eventsRoutes);
 fastify.register(tournamentRoutes);
+fastify.register(localGamesRoutes);
 
 fastify.listen({ port: config.PORT, host: '0.0.0.0'}, (err, address) => {
 	if (err) {
