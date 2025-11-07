@@ -130,7 +130,8 @@ export class UserManager extends ManagerBase {
 	}
 
 	saveAll() {
-		//not implemented cause not needed since the save is done on modifications
+		for (const user of this.users.values())
+			this.db.saveUser(user);
 	}
 
 	unloadUser(id: user_id) {

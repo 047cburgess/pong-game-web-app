@@ -3,6 +3,8 @@ import { ManagerBase } from "./CommandManager";
 import { UserData, user_id } from "./UserManager";
 import { FriendRequest } from "./FriendManager";
 import { ManagerRegistry } from "./ManagerRegistry";
+import fs from 'fs';
+import path from "path";
 
 @ManagerRegistry.register()
 export class DbManager extends ManagerBase {
@@ -20,15 +22,21 @@ export class DbManager extends ManagerBase {
 		removeAllUserFriendRequests: Database.Statement;
 	};
 
-	constructor(dbPath = "./usermanagement.db") {
+	constructor(private DATABASE_PATH = path.join(process.cwd(), "databases/usermanagement.db")) {
 		super();
-		this.db = new Database(dbPath);
+		this.ensureDir();
+		this.db = new Database(DATABASE_PATH);
 		this.initialize();
 		this.stmts = this.prepareStatements();
 	}
 
 	private initialize() {
 		this.createTables();
+	}
+
+	private ensureDir() {
+		const dir = path.dirname(this.DATABASE_PATH);
+		fs.mkdirSync(dir, { recursive: true });
 	}
 
 	private createTables() {

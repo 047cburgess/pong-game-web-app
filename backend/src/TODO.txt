@@ -10,7 +10,6 @@ Commands:
 	add specific/generic errors
 
 usermanager:
-	need to save the user's data on usersave
 
 AvatarManager:
 
