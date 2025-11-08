@@ -28,7 +28,7 @@ export const gamePropertiesSchema = z.object({
 export type GameProperties = z.infer<typeof gamePropertiesSchema>;
 
 export type GameId = string;
-export type PlayerId = number;
+export type PlayerId = string;
 export type PlayerInput = {
   seq: number,
   time: number,

@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import Fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
 import { z } from 'zod';
-import { Game, gamePropertiesSchema, } from './game.ts';
+import { Game, gamePropertiesSchema, } from './game.js';
 const games = new Map();
 const tokenMap = new Map();
 function createToken(playerId, gameId, ttlMs = 5 * 60_000) {

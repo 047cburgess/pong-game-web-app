@@ -1,29 +1,13 @@
-import type { components as PublicAPIComponents } from './@types/PublicAPI';
-import type { components as InternalAPIComponents } from './@types/InternalAPI';
-import type { components as WebHooksComponents } from './@types/Webhooks';
-
-// Internal API types (game service communication)
-export type NewGameRequest = InternalAPIComponents['schemas']['NewGameRequest'];
-export type NewGameResponse = InternalAPIComponents['schemas']['NewGameResponse'];
-export type NewTournamentGameResponse = InternalAPIComponents['schemas']['NewTournamentGameResponse'];
-export type GameResultWebhookBody = WebhooksComponents['schemas']['GameResultWebhookBody'];
-
-// Open API types
-export type GameKey = PublicAPIComponents['schemas']['GameKey'];
-
-
 import { randomUUID } from 'crypto';
 
 import Fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
 import { z } from 'zod';
 
-import { Game, gamePropertiesSchema, } from './game.ts';
-import type { GameId, PlayerId, PlayerSocket, PlayerInput, GameProperties } from './game.ts';
+import { Game, gamePropertiesSchema, } from './game.js';
+import type { GameId, PlayerId, PlayerSocket, PlayerInput, GameProperties } from './game.js';
 
 const games = new Map<GameId, Game>();
-
-// Map of gameTokens: UUID to player, game & expires
 const tokenMap = new Map<string, {
   playerId: PlayerId;
   gameId: GameId;
@@ -39,7 +23,6 @@ function createToken(playerId: PlayerId, gameId: GameId, ttlMs = 5 * 60_000) {
   });
   return t;
 }
-
 function validateToken(t: string) {
   const s = tokenMap.get(t);
   if (!s) {
@@ -56,9 +39,7 @@ function validateToken(t: string) {
 const fastify = Fastify();
 fastify.register(websocketPlugin);
 
-/* Matchmaking requests a new classic game - can be a draw */
-fastify.post('/internal/games/classic/create', async (req, resp) => {
-// Game properties probably wont be passed as parameters, should just be fixed in the code
+fastify.post('/new-game', async (req, resp) => {
   let gameParams: GameProperties;
   try {
     gameParams = gamePropertiesSchema.parse(req.body);
@@ -73,8 +54,6 @@ fastify.post('/internal/games/classic/create', async (req, resp) => {
     }
     return resp.status(500).send({ error: 'Server error' });
   }
-
-  // Generate game ID and add to map of game id to game state
   const gameId = randomUUID();
   const game = new Game(
     gameId,
@@ -83,45 +62,13 @@ fastify.post('/internal/games/classic/create', async (req, resp) => {
   );
   games.set(gameId, game);
 
-  // array of KEYS of internalAPI type GameKey
-  let keys: NewGameResponse = [];
+  let tokens: string[] = [];
   for (let i = 0; i < gameParams.nPlayers; i++) {
-    const key: Gamekey = createToken(randomUUID(), gameId);
-    keys.push({
-      key,
-      gameId,
-      expires: new Date(Date.now() + 5 * 60_000)
-    });
+    tokens.push(createToken(randomUUID(), gameId));
   }
-  // returns internal api type NewGameResponse
-  return { keys };
+  return { gameId, tokens, gameParams };
 });
 
-/* Matchmaking requests a new tournament game - cannot be a draw and has spectator mode */
-fastify.post('/internal/games/tournament/create', async (req, resp) => {
- // Game properties probably wont be passed as parameters, should just be fixed in the code
-  let gameParams: GameProperties;
-  try {
-    gameParams = gamePropertiesSchema.parse(req.body);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return resp.status(400).send({
-        errors: error.issues.map(err => ({
-          path: err.path.join('.'),
-          message: err.message
-        })),
-      });
-    }
-    return resp.status(500).send({ error: 'Server error' });
-  }
-  // Generate the game ID and add to map of game id to game state
-  // Generate array of KEYS of internalAPI type GameKey
-  // Set viewing key (1) for spectator mode
-  // returns Internal API spec New Tournament game response ( Game keys and the viewing key)
-
-})
-
-/* Route to connect to game socket as a player */
 fastify.register(async function(fastify) {
   fastify.get<{
     Querystring: { token: string },
