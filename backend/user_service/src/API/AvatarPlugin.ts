@@ -1,5 +1,4 @@
 import fastifyStatic from "@fastify/static";
-import fs from "fs/promises";
 import path from "path";
 import { FastifyInstance } from "fastify";
 import { onUserSeen } from "./preHandler";
@@ -8,8 +7,8 @@ import { UploadAvatarCommand } from "../Commands/UploadAvatarCommand";
 import fastifyMultipart from "@fastify/multipart";
 
 export async function avatarPlugin(server: FastifyInstance) {
-	const AVATAR_DIR = path.join(process.cwd(), "uploads/avatars");
-	const DEFAULT_AVATAR = path.join(process.cwd(), "uploads/avatars/default.webp");
+	const AVATAR_DIR = path.join(process.cwd(), "data/avatars");
+	const DEFAULT_AVATAR = path.join(process.cwd(), "data/avatars/default.webp");
 
 	server.register(fastifyStatic, {
 		root: AVATAR_DIR,

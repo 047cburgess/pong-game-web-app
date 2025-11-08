@@ -1,4 +1,3 @@
-//import { DbManager } from "../Database/DbManager";
 import { DbManager } from "./DbManager";
 import { user_id } from "./UserManager";
 import { ManagerBase } from "./CommandManager";

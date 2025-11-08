@@ -22,7 +22,7 @@ export class DbManager extends ManagerBase {
 		removeAllUserFriendRequests: Database.Statement;
 	};
 
-	constructor(private DATABASE_PATH = path.join(process.cwd(), "databases/usermanagement.db")) {
+	constructor(private DATABASE_PATH = path.join(process.cwd(), "data/databases/usermanagement.db")) {
 		super();
 		this.ensureDir();
 		this.db = new Database(DATABASE_PATH);

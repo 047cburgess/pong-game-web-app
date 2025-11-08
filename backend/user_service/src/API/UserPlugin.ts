@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { onUserSeen, Params, resolveUserId } from "./preHandler";
+import { onUserSeen, resolveUserId } from "./preHandler";
 import { CommandManager } from "../Managers/CommandManager";
 import { GetUserDataCommand } from "../Commands/GetUserDataCommand";
 import { EditUsernameCommand } from "../Commands/EditUsernameCommand";

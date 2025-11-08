@@ -5,10 +5,6 @@ import { avatarPlugin } from "./API/AvatarPlugin";
 import { userPlugin } from "./API/UserPlugin";
 import { friendPlugin } from "./API/FriendPlugin";
 import { ClearCacheCommand } from "./Commands/ClearCacheCommand";
-import fastifyStatic from "@fastify/static";
-import { join } from "path";
-import fastifyMultipart from "@fastify/multipart";
-import fastifyFormbody from "@fastify/formbody";
 
 let isInitialized = false;
 let clearIntervalHandle: NodeJS.Timeout | null = null;
@@ -32,7 +28,7 @@ export function initializeApp() {
 export function createServer() {
 	initializeApp();
 	const server = Fastify({ logger: false });
-
+	/*
 	server.register(fastifyStatic, {
         root: join(__dirname, "../../../frontend"),
         // Ajoutez l'option `setHeaders` pour vous assurer que les fichiers JS sont bien identifiés
@@ -42,14 +38,14 @@ export function createServer() {
             }
         },
         // Assurez-vous que l'option `extensions` ou `decorateReply` n'a rien cassé
-    });
+    });*/
 
 	server.register(userPlugin);
 	server.register(friendPlugin);
 	server.register(avatarPlugin);
 
 	server.addHook('onReady', () => {
-		console.log('Server ready, content type parsers:', server.hasContentTypeParser('multipart/form-data'));
+		console.log('Server ready');
 	});
 
 	return server;

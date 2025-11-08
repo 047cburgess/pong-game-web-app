@@ -3,7 +3,7 @@ import { DbManager } from "./DbManager";
 import { ManagerRegistry } from "./ManagerRegistry";
 import { generateUsername } from "../Utils/UsernameGenerator";
 
-const OFFLINE_THRESHOLD = 1000 * 60 * 1; // 5 minutes sans activité
+const OFFLINE_THRESHOLD = 1000 * 60 * 5; // 5 minutes sans activité
 
 export type user_id = number
 
@@ -29,10 +29,6 @@ export interface UserData {
 export class UserManager extends ManagerBase {
 	private users: Map<user_id, UserData> = new Map();
 	private nameToId: Map<string, user_id> = new Map();
-
-	//need to choose if i keep those 
-	private toSave: UserData[] = [];
-	private toRemove: UserData[] = [];
 
 	constructor(private db: DbManager) {
 		super();

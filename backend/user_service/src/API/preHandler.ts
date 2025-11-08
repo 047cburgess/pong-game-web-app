@@ -1,4 +1,4 @@
-import Fastify, { FastifyReply, FastifyRequest, HookHandlerDoneFunction } from "fastify"
+import { FastifyReply, FastifyRequest, HookHandlerDoneFunction } from "fastify"
 import { CommandManager, CommandResult } from "../Managers/CommandManager";
 import { GetUserIdCommand } from "../Commands/GetUserIdCommand";
 import { OnUserSeenCommand } from "../Commands/OnUserSeenCommand";

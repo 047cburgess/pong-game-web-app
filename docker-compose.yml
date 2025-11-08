@@ -1,0 +1,15 @@
+user-service:
+  build: 
+    context: ./backend/user_service #idk porbably gonna be ./backend/user_service
+    dockerfile: Dockerfile
+  container_name: user-service
+  networks:
+    - transcendence
+  ports:
+    - "3003:3000"
+  volumes:
+    - user-service-data:/app/data
+  restart: unless-stopped
+
+volumes:
+  user-service-data
