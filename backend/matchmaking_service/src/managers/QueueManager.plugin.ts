@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
-import { QueueManager } from './QueueManager';
+import { QueueManager } from './QueueManager.js';
 
 declare module 'fastify' {
 	interface FastifyInstance {

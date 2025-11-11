@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { CustomGameManager } from './CustomGameManager';
+import { CustomGameManager } from './CustomGameManager.js';
 import type { FastifyInstance } from 'fastify';
 
 declare module 'fastify' {

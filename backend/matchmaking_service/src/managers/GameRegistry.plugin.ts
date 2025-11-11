@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { GameRegistry } from './GameRegistry';
+import { GameRegistry } from './GameRegistry.js';
 import type { FastifyInstance } from 'fastify';
 
 declare module 'fastify' {

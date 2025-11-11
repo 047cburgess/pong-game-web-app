@@ -17,6 +17,7 @@ export declare const gamePropertiesSchema: z.ZodObject<{
 export type GameProperties = z.infer<typeof gamePropertiesSchema>;
 export type GameId = string;
 export type PlayerId = string;
+export type UserId = number;
 export type PlayerInput = {
     seq: number;
     time: number;
@@ -25,8 +26,10 @@ export type PlayerInput = {
 };
 export type PlayerSocket = {
     id: PlayerId;
+    userId?: number;
     ws: WS;
     lastSeq?: number;
+    isViewer: boolean;
 };
 type PlayerState = {
     pos: number;
@@ -63,26 +66,32 @@ export declare class Game {
     readonly tickMs: 20;
     readonly hook?: string;
     readonly params: GameProperties;
+    readonly viewingKey: string;
     players: Map<string, PlayerSocket>;
     playerSides: Map<string, number>;
+    readyPlayers: Set<string>;
     gameStart?: number;
+    gameEnded: boolean;
     state: GameState;
     inputBuffers: Map<string, PlayerInput[]>;
     loop?: NodeJS.Timeout;
     lastTime: number;
     constructor(id: GameId, params: GameProperties, hook?: string);
     addPlayer(p: PlayerSocket): void;
+    playerReady(pid: PlayerId): void;
+    startGame(): void;
     removePlayer(pid: PlayerId): void;
     playerInput(playerId: PlayerId, input: PlayerInput): void;
     gameTick(): void;
     broadcast(msg: string): void;
+    broadcastPlayerList(): void;
     sendTo(p: PlayerSocket, msg: string): void;
     updateBall(): void;
     collision(side: 0 | 1 | 2 | 3): void;
     playerCollision(rpos: Vec2, rvel: Vec2, side: 0 | 1 | 2 | 3): Vec2;
     applyInput(pid: PlayerId, input?: PlayerInput[]): void;
     checkGameEnd(): void;
-    endGame(): void;
+    endGame(): Promise<void>;
 }
 export {};
 //# sourceMappingURL=game.d.ts.map

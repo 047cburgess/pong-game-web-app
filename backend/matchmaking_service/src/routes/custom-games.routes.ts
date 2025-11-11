@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { createCustomGameSchema, joinGameSchema, declineGameSchema, viewGameSchema } from './custom-games.schemas';
-import { UnauthorizedError, NotFoundError } from '../utils/errors';
-import { UserId } from '../types';
+import { createCustomGameSchema, joinGameSchema, declineGameSchema, viewGameSchema } from './custom-games.schemas.js';
+import { UnauthorizedError, NotFoundError } from '../utils/errors.js';
+import { UserId } from '../types.js';
 // TODO: Authentication -> should be a prehandler rather than being mixed in. Here temp.
 
  	export default async function customGamesRoutes(fastify: FastifyInstance) {

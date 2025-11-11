@@ -1,27 +1,27 @@
 import Fastify from 'fastify';
-import { config } from './config/config';
-import { AppError } from './utils/errors'
-import fastifyMetrics from 'fastify-metrics';
-import dbPlugin from './database/database';
-import gameServicePlugin from './clients/game-service.plugin';
-import gameRegistryPlugin from './managers/GameRegistry.plugin';
-import gameHistoryManagerPlugin from './managers/GameHistoryManager.plugin';
-import customGameManagerPlugin from './managers/CustomGameManager.plugin';
-import queueManagerPlugin from './managers/QueueManager.plugin';
-import tournamentManagerPlugin from './managers/TournamentManager.plugin';
-import eventManagerPlugin from './managers/EventManager.plugin';
-import webhooksRoutes from './routes/webhooks/game-service.routes';
-import customGamesRoutes from './routes/custom-games.routes';
-import queueRoutes from './routes/queue.routes';
-import gameHistoryRoutes from './routes/game-history.routes';
-import eventsRoutes from './routes/events.routes';
-import tournamentRoutes from './routes/tournament.routes';
-import localGamesRoutes from './routes/local-games.routes';
+import cors from '@fastify/cors';
+import { config } from './config/config.js';
+import { AppError } from './utils/errors.js'
+import dbPlugin from './database/database.js';
+import gameServicePlugin from './clients/game-service.plugin.js';
+import gameRegistryPlugin from './managers/GameRegistry.plugin.js';
+import gameHistoryManagerPlugin from './managers/GameHistoryManager.plugin.js';
+import customGameManagerPlugin from './managers/CustomGameManager.plugin.js';
+import queueManagerPlugin from './managers/QueueManager.plugin.js';
+import tournamentManagerPlugin from './managers/TournamentManager.plugin.js';
+import eventManagerPlugin from './managers/EventManager.plugin.js';
+import webhooksRoutes from './routes/webhooks/game-service.routes.js';
+import customGamesRoutes from './routes/custom-games.routes.js';
+import queueRoutes from './routes/queue.routes.js';
+import gameHistoryRoutes from './routes/game-history.routes.js';
+import eventsRoutes from './routes/events.routes.js';
+import tournamentRoutes from './routes/tournament.routes.js';
+import localGamesRoutes from './routes/local-games.routes.js';
 
 
 const envToLogger = {
   development: {
-    level: process.env.LOG_LEVEL || 'debug',
+    level: config.LOG_LEVEL === 'info' ? 'debug' : config.LOG_LEVEL,
     transport: {
       target: 'pino-pretty',
       options: {
@@ -32,25 +32,19 @@ const envToLogger = {
     }
   },
   production: {
-    level: process.env.LOG_LEVEL || 'warn'
+    level: config.LOG_LEVEL === 'info' ? 'warn' : config.LOG_LEVEL
   },
   test: false
 };
 
-const environment = process.env.NODE_ENV || 'development';
 const fastify = Fastify({
-  logger: envToLogger[environment as keyof typeof envToLogger] ?? true
+  logger: envToLogger[config.NODE_ENV as keyof typeof envToLogger] ?? true
 });
 
-fastify.register(fastifyMetrics, {
-  endpoint: '/metrics',
-  defaultMetrics: {
-    enabled: true,
-    prefix: 'matchmaking_'
-  },
-  routeMetrics: {
-    enabled: true,
-  },
+await fastify.register(cors, {
+	origin: ['*'],
+	credentials: true,
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 });
 
 fastify.setErrorHandler((error, _request, reply) => {
@@ -113,3 +107,82 @@ fastify.listen({ port: config.PORT, host: '0.0.0.0'}, (err, address) => {
 	}
 	fastify.log.info(`Matchmaking service running on ${address}`);
 });
+
+// cleanup job for abandoned games
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+const PENDING_GAME_MAX_AGE_MS = 60 * 60 * 1000;
+const ACTIVE_GAME_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+const QUEUE_WAITING_MAX_AGE_MS = 10 * 60 * 1000;
+const TOURNAMENT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+
+let cleanupIntervalId: NodeJS.Timeout;
+
+fastify.ready().then(() => {
+  fastify.log.info('Starting periodic cleanup job');
+
+  cleanupIntervalId = setInterval(() => {
+    fastify.log.debug('Running periodic cleanup');
+
+    try {
+      const customCleaned = fastify.customGameManager.cleanupAbandonedGames(
+	      PENDING_GAME_MAX_AGE_MS);
+
+      const queueCleaned = fastify.queueManager.cleanupAbandonedGames(
+        QUEUE_WAITING_MAX_AGE_MS,
+        ACTIVE_GAME_MAX_AGE_MS
+      );
+
+      const tournamentCleaned = fastify.tournamentManager.cleanupAbandonedTournaments(
+	      TOURNAMENT_MAX_AGE_MS);
+
+      const registryStats = fastify.gameRegistry.getStats();
+
+      if (customCleaned > 0 || queueCleaned.waiting > 0 || queueCleaned.active > 0 ||
+          tournamentCleaned > 0) {
+        fastify.log.info(
+          {
+            cleaned: {
+              custom: customCleaned,
+              queueWaiting: queueCleaned.waiting,
+              queueActive: queueCleaned.active,
+              tournaments: tournamentCleaned
+            },
+            registry: registryStats
+          },
+          'Cleanup completed'
+        );
+      } else {
+        fastify.log.debug({ registry: registryStats }, 'Cleanup cycle - no games to clean');
+      }
+    } catch (error) {
+      fastify.log.error(error, 'Error during cleanup');
+    }
+  }, CLEANUP_INTERVAL_MS);
+});
+
+const shutdown = async () => {
+  fastify.log.info('Shutting down matchmaking service');
+
+  if (cleanupIntervalId) {
+    clearInterval(cleanupIntervalId);
+    fastify.log.info('Cleanup interval cleared');
+  }
+
+  // Cancel all tournament cleanup timeouts
+  fastify.tournamentManager.cancelAllCleanupTimeouts();
+
+  // Close all SSE connections
+  fastify.eventManager.closeAllConnections();
+
+  try {
+    await fastify.close();
+  } catch (err) {
+    fastify.log.error(err, 'Error closing Fastify:');
+  }
+
+  fastify.log.info('Matchmaking service stopped.');
+  process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

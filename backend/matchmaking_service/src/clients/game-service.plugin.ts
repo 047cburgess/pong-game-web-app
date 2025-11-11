@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { GameServiceClient } from './game-service.client';
+import { GameServiceClient } from './game-service.client.js';
 
 declare module 'fastify' {
 	interface FastifyInstance {

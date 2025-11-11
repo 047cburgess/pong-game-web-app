@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyBaseLogger } from 'fastify';
-import { UserId, GameId, TournamentId, GameResultAPI, TournamentResultAPI, GameStatsAPI, DailyPlayerStatsAPI } from '../types';
-import { LocalGameSubmission, LocalTournamentSubmission, LocalGameDB, LocalGameParticipantDB, LocalTournamentDB } from '../types';
-import { NotFoundError, ForbiddenError, ConflictError, BadRequestError } from '../utils/errors';
+import { UserId, GameId, TournamentId, GameResultAPI, TournamentResultAPI, GameStatsAPI, DailyPlayerStatsAPI } from '../types.js';
+import { LocalGameSubmission, LocalTournamentSubmission, LocalGameDB, LocalGameParticipantDB, LocalTournamentDB } from '../types.js';
+import { NotFoundError, ForbiddenError, ConflictError, BadRequestError } from '../utils/errors.js';
 import { randomUUID } from 'crypto';
 
 export class GameHistoryManager {
@@ -12,7 +12,6 @@ export class GameHistoryManager {
 		this.log = logger;
 		this.db = db;
 	}
-
 
 	private transformGameRow(row: any): GameResultAPI {
 		const players = JSON.parse(row.players);
@@ -51,6 +50,39 @@ export class GameHistoryManager {
 		};
 	}
 
+	private transformLocalGameRow(row: any): any {
+		const participants = JSON.parse(row.participants);
+		return {
+			id: row.game_id,
+			hostId: row.host_id,
+			date: row.date,
+			duration: row.duration,
+			winnerType: row.winner_type,
+			winnerGuestName: row.winner_guest_name,
+			participants: participants.map((p: any) => ({
+				position: p.position,
+				guestName: p.guestName,
+				score: p.score,
+			})),
+		};
+	}
+
+	private transformLocalTournamentRow(row: any): any {
+		return {
+			id: row.tournament_id,
+			hostId: row.host_id,
+			date: row.date,
+			guest1Name: row.guest1_name,
+			guest2Name: row.guest2_name,
+			guest3Name: row.guest3_name,
+			semi1Id: row.semi1_id,
+			semi2Id: row.semi2_id,
+			finalId: row.final_id,
+			winnerType: row.winner_type,
+			winnerName: row.winner_name,
+		};
+	}
+
 	/**
 	 * Process a local game submission into database format
 	 * No validation - just transforms data
@@ -58,7 +90,6 @@ export class GameHistoryManager {
 	private processLocalGame(gameSubmission: LocalGameSubmission, hostId: UserId): { game: LocalGameDB; participants: LocalGameParticipantDB[] } {
 		const { gameId, players, winnerId, duration } = gameSubmission;
 
-		// Determine winner type based on winnerId
 		let winnerType: 'host' | 'guest' | null = null;
 		let winnerGuestName: string | undefined = undefined;
 
@@ -134,7 +165,6 @@ export class GameHistoryManager {
 		const semi2 = this.processLocalGame(submission.games.semifinal2, hostId);
 		const final = this.processLocalGame(submission.games.final, hostId);
 
-		// Validate final has winner
 		if (!final.game.winnerType) {
 			throw new BadRequestError('Tournament final must have a winner (no draws)');
 		}
@@ -255,5 +285,31 @@ export class GameHistoryManager {
 		const row = this.db.getTournamentById(tournamentId);
 		if (!row) throw new NotFoundError('Tournament not found');
 		return this.transformTournamentRow(row);
+	}
+
+	/**
+	 * Get paginated list of local games for a player
+	 * @param userId - The host's user ID
+	 * @param page - Page number (1-indexed)
+	 * @param perPage - Number of games per page
+	 * @returns Array of local game results
+	 */
+	getLocalGamesByPlayer(userId: UserId, page: number = 1, perPage: number = 25): any[] {
+		const offset = (page - 1) * perPage;
+		const rows = this.db.getLocalGamesByPlayer(userId, perPage, offset);
+		return rows.map(row => this.transformLocalGameRow(row));
+	}
+
+	/**
+	 * Get paginated list of local tournaments for a player
+	 * @param userId - The host's user ID
+	 * @param page - Page number (1-indexed)
+	 * @param perPage - Number of tournaments per page
+	 * @returns Array of local tournament results
+	 */
+	getLocalTournamentsByPlayer(userId: UserId, page: number = 1, perPage: number = 20): any[] {
+		const offset = (page - 1) * perPage;
+		const rows = this.db.getLocalTournamentsByPlayer(userId, perPage, offset);
+		return rows.map(row => this.transformLocalTournamentRow(row));
 	}
 }

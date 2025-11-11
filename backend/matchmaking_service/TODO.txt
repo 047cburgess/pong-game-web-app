@@ -1,0 +1,5 @@
+-> AUTH integration - MUST
+-> SSE reconnection handling - MUST
+-> Check edge cases - MUST
+-> SSE storing failed deliveries for retry - NICE
+-> Implement logic to invite further users to custom games (like in place for tournaments) - NICE

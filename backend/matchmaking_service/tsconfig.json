@@ -1,7 +1,26 @@
+//{
+//  "compilerOptions": {
+//    "module": "nodenext",
+//    "target": "esnext",
+//    "lib": ["esnext"],
+//    "types": ["node"],
+//    "outDir": "dist",
+//    "rootDir": "src",
+//    "strict": true,
+//    "esModuleInterop": true,
+//    "skipLibCheck": true,
+//    "baseUrl": "./src",
+//    "typeRoots": ["./node_modules/@types", "./src/types"]
+//
+//  },
+//  "include": ["src"],
+//  "exclude": ["node_modules", "dist", "src/archive", "src/stuff"]
+//}
+
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
+    "target": "ES2022",           // <-- must be ES2022 or higher for top-level await
+    "module": "NodeNext",         // okay for Node ESM
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
@@ -9,9 +28,7 @@
     "skipLibCheck": true,
     "baseUrl": "./src",
     "typeRoots": ["./node_modules/@types", "./src/types"]
-
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "src/archive", "src/stuff"]
 }
-

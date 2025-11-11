@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Local Tournament Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #111;
+      color: #eee;
+    }
+    canvas {
+      width: 100%;
+      height: 70vh;
+      display: block;
+    }
+    .container {
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 25px;
+      background: #222;
+      border-radius: 10px;
+    }
+    h1 {
+      margin-top: 0;
+      color: #ff1493;
+      font-size: 24px;
+    }
+    h2 {
+      color: #ddd;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+      background: #ff1493;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #ff006e;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    .hidden {
+      display: none !important;
+    }
+    #playerList, #debugtext {
+      padding: 10px;
+      font-size: 16px;
+    }
+    #gameCanvas {
+      display: none;
+    }
+    .bracket {
+      background: #333;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 6px;
+    }
+    .match {
+      background: #444;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 3px solid #ff1493;
+    }
+    .match.complete {
+      border-left-color: #28a745;
+    }
+    .info-box {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="setup" class="container">
+  <h1>Local Tournament Test</h1>
+  <p>4 players on one keyboard - semi-finals then final</p>
+
+  <div>
+    <h2>Player Names</h2>
+    <input type="text" id="player1Name" placeholder="Player 1 Name" value="Player 1">
+    <input type="text" id="player2Name" placeholder="Player 2 Name" value="Player 2">
+    <input type="text" id="player3Name" placeholder="Player 3 Name" value="Player 3">
+    <input type="text" id="player4Name" placeholder="Player 4 Name" value="Player 4">
+  </div>
+
+  <button onclick="startTournament()">Start Tournament</button>
+  <div id="status"></div>
+</div>
+
+<div id="tournamentDisplay" class="container hidden">
+  <h1>Tournament Progress</h1>
+  <div id="bracketInfo"></div>
+  <button id="nextGameBtn" onclick="startNextGame()">Start Next Game</button>
+</div>
+
+<div id="playerList"></div>
+<div id="debugtext"></div>
+<button id="launchButton" class="hidden">Launch Game</button>
+<canvas id="gameCanvas"></canvas>
+
+<script src="dist/pong3d.js"></script>
+<script>
+const GAME_SERVICE_URL = 'http://localhost:3001';
+const WS_URL = 'ws://localhost:3001/ws';
+
+let playerNames = [];
+let pongApp = null;
+let tournamentState = {
+  semi1: { players: [], winner: null, gameId: null },
+  semi2: { players: [], winner: null, gameId: null },
+  final: { players: [], winner: null, gameId: null },
+  champion: null
+};
+let currentMatch = null;
+
+function startTournament() {
+  playerNames = [
+    document.getElementById('player1Name').value,
+    document.getElementById('player2Name').value,
+    document.getElementById('player3Name').value,
+    document.getElementById('player4Name').value
+  ];
+
+  // Assign to semi-finals
+  tournamentState.semi1.players = [playerNames[0], playerNames[1]];
+  tournamentState.semi2.players = [playerNames[2], playerNames[3]];
+
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('tournamentDisplay').classList.remove('hidden');
+
+  updateBracket();
+}
+
+function updateBracket() {
+  const bracketDiv = document.getElementById('bracketInfo');
+
+  let html = '<div class="bracket">';
+
+  // Semi-final 1
+  html += `<div class="match ${tournamentState.semi1.winner ? 'complete' : ''}">`;
+  html += `<strong>Semi-Final 1</strong><br>`;
+  html += `${tournamentState.semi1.players[0]} vs ${tournamentState.semi1.players[1]}<br>`;
+  if (tournamentState.semi1.winner) {
+    html += `<span style="color: #6fdb6f;">Winner: ${tournamentState.semi1.winner}</span>`;
+  }
+  html += '</div>';
+
+  // Semi-final 2
+  html += `<div class="match ${tournamentState.semi2.winner ? 'complete' : ''}">`;
+  html += `<strong>Semi-Final 2</strong><br>`;
+  html += `${tournamentState.semi2.players[0]} vs ${tournamentState.semi2.players[1]}<br>`;
+  if (tournamentState.semi2.winner) {
+    html += `<span style="color: #6fdb6f;">Winner: ${tournamentState.semi2.winner}</span>`;
+  }
+  html += '</div>';
+
+  // Final
+  if (tournamentState.final.players.length > 0) {
+    html += `<div class="match ${tournamentState.final.winner ? 'complete' : ''}">`;
+    html += `<strong>FINAL</strong><br>`;
+    html += `${tournamentState.final.players[0]} vs ${tournamentState.final.players[1]}<br>`;
+    if (tournamentState.final.winner) {
+      html += `<span style="color: #6fdb6f;">Winner: ${tournamentState.final.winner}</span>`;
+    }
+    html += '</div>';
+  }
+
+  // Champion
+  if (tournamentState.champion) {
+    html += `<div class="info-box" style="text-align: center; font-size: 18px;">`;
+    html += `<strong>CHAMPION:</strong> ${tournamentState.champion}`;
+    html += '</div>';
+  }
+
+  html += '</div>';
+  bracketDiv.innerHTML = html;
+
+  // Update button text
+  if (!tournamentState.semi1.winner) {
+    currentMatch = 'semi1';
+    document.getElementById('nextGameBtn').textContent = 'Start Semi-Final 1';
+  } else if (!tournamentState.semi2.winner) {
+    currentMatch = 'semi2';
+    document.getElementById('nextGameBtn').textContent = 'Start Semi-Final 2';
+  } else if (!tournamentState.final.winner) {
+    currentMatch = 'final';
+    tournamentState.final.players = [tournamentState.semi1.winner, tournamentState.semi2.winner];
+    document.getElementById('nextGameBtn').textContent = 'Start Final';
+  } else {
+    document.getElementById('nextGameBtn').classList.add('hidden');
+  }
+}
+
+async function startNextGame() {
+  try {
+    const response = await fetch(`${GAME_SERVICE_URL}/internal/games/classic/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nPlayers: 2 })
+    });
+
+    const data = await response.json();
+    console.log('Game created:', data);
+
+    const tokens = data.gameKeys.map(k => k.key);
+
+    // Store game ID
+    tournamentState[currentMatch].gameId = data.gameKeys[0].gameId;
+
+    // Hide tournament display, show game
+    document.getElementById('tournamentDisplay').classList.add('hidden');
+    document.getElementById('gameCanvas').style.display = 'block';
+    const launchBtn = document.getElementById('launchButton');
+    launchBtn.classList.remove('hidden');
+    launchBtn.disabled = false;
+    launchBtn.textContent = 'Launch Game';
+
+    // Connect players
+    connectPlayers(tokens);
+
+  } catch (error) {
+    alert(`Error: ${error.message}`);
+  }
+}
+
+function connectPlayers(tokens) {
+  const [t1, t2] = tokens;
+
+  pongApp = new window.PongApp(
+    WS_URL,
+    t1, 1,  // token, userId
+    t2      // token2
+  );
+
+  // Listen for game end
+  const player1Ws = pongApp.player1?.ws;
+  if (player1Ws) {
+    player1Ws.addEventListener('message', (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'game_end') {
+          handleGameEnd(msg);
+        }
+      } catch (err) {
+        // Ignore
+      }
+    });
+  }
+
+  // Attach launch button (using onclick to replace previous handler)
+  document.getElementById('launchButton').onclick = () => {
+    [pongApp.player1, pongApp.player2].forEach(p => {
+      if (!p || p.ws.readyState !== WebSocket.OPEN) return;
+      p.ws.send(JSON.stringify({ type: "ready" }));
+    });
+    document.getElementById('launchButton').disabled = true;
+    document.getElementById('launchButton').textContent = 'Launching...';
+  };
+}
+
+function handleGameEnd(msg) {
+  console.log('Game ended:', msg);
+
+  // Determine winner
+  const winnerIdx = msg.players.findIndex(p => p.id === msg.winnerId);
+  const playerNames = tournamentState[currentMatch].players;
+  const winner = playerNames[winnerIdx];
+
+  tournamentState[currentMatch].winner = winner;
+
+  if (currentMatch === 'final') {
+    tournamentState.champion = winner;
+  }
+
+  // Hide game, show bracket
+  document.getElementById('gameCanvas').style.display = 'none';
+  document.getElementById('launchButton').classList.add('hidden');
+  document.getElementById('tournamentDisplay').classList.remove('hidden');
+
+  updateBracket();
+}
+</script>
+
+</body>
+</html>

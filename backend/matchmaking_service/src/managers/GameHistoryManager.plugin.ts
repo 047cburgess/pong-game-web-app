@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { GameHistoryManager } from './GameHistoryManager';
+import { GameHistoryManager } from './GameHistoryManager.js';
 import type { FastifyInstance } from 'fastify';
 
 declare module 'fastify' {

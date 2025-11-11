@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Local Multiplayer Pong</title>
+<style>
+  body { margin: 0; background: #111; color: #eee; }
+  canvas { width: 100%; height: 80vh; display: block; }
+  #playerList, #debugtext { padding: 10px; font-size: 16px; }
+  .setup { max-width: 600px; margin: 20px auto; padding: 20px; background: #222; border-radius: 8px; }
+  button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
+  #gameCanvas { display: none; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="setup" class="setup">
+  <h1>Local Multiplayer Pong</h1>
+  <p>Select number of players and create a game:</p>
+  <div>
+    <button onclick="createGame(2)">2 Players</button>
+    <button onclick="createGame(3)">3 Players</button>
+    <button onclick="createGame(4)">4 Players</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<div id="playerList"></div>
+<div id="debugtext"></div>
+<button id="launchButton" class="hidden">Launch Game</button>
+<canvas id="gameCanvas"></canvas>
+
+<script src="dist/pong3d.js"></script>
+<script>
+const GAME_SERVICE_URL = 'http://localhost:3001';
+const MATCHMAKING_URL = 'http://localhost:3000';
+const WS_URL = 'ws://localhost:3001/ws';
+let pongApp = null;
+let gameData = null;
+
+async function createGame(nPlayers) {
+  try {
+    const response = await fetch(`${GAME_SERVICE_URL}/internal/games/classic/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nPlayers })
+    });
+
+    const data = await response.json();
+    console.log('Game created:', data);
+
+    gameData = data;
+
+    const tokens = data.gameKeys.map(k => k.key);
+
+    document.getElementById('status').innerHTML =
+      `<p style="color: #0f0;">✓ ${nPlayers}-player game created!</p>`;
+
+    // Hide setup, show game
+    document.getElementById('setup').classList.add('hidden');
+    document.getElementById('gameCanvas').style.display = 'block';
+    document.getElementById('launchButton').classList.remove('hidden');
+
+    // Connect all players
+    connectPlayers(tokens);
+
+  } catch (error) {
+    document.getElementById('status').innerHTML =
+      `<p style="color: #f00;">Error: ${error.message}</p>`;
+  }
+}
+
+function connectPlayers(tokens) {
+  // Pass tokens based on how many we have
+  const [t1, t2, t3, t4] = tokens;
+
+  pongApp = new window.PongApp(
+    WS_URL,
+    t1, 1,  // token, userId
+    t2,     // token2
+    t3,     // token3
+    t4      // token4
+  );
+
+
+  document.getElementById('launchButton').addEventListener('click', () => {
+    [pongApp.player1, pongApp.player2, pongApp.player3, pongApp.player4].forEach(p => {
+      if (!p || p.ws.readyState !== WebSocket.OPEN) return;
+      p.ws.send(JSON.stringify({ type: "ready" }));
+      console.log('Sent ready for player');
+    });
+    document.getElementById('launchButton').disabled = true;
+    document.getElementById('launchButton').textContent = 'Launching...';
+  });
+}
+
+</script>
+
+</body>
+</html>
+

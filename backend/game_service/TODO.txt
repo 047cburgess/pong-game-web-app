@@ -1,0 +1,6 @@
+-> AUTH integration
+-> check is wss not ws (think fastify upgrades it???)
+-> game bugs 
+	-> sometimes ball hits paddle but says no collision detected
+	-> sometimes ball gets stuck going left to right in middle of screen
+

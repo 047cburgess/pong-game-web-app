@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { prepareStatements } from "./statements";
+import { prepareStatements } from "./statements.js";
 
 export default function seedDatabase(db: Database.Database) {
   const stmts = prepareStatements(db);

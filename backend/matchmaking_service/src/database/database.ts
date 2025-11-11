@@ -2,10 +2,10 @@ import fp from 'fastify-plugin';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import seedDatabase from './seed';
-import { prepareStatements } from './statements';
-import { createTablesSQL } from './schema';
-import { UserId, GameId, TournamentId, GameResultDB, GameParticipationDB, TournamentResultDB, TournamentParticipationDB, LocalGameDB, LocalGameParticipantDB, LocalTournamentDB } from '../types';
+import seedDatabase from './seed.js';
+import { prepareStatements } from './statements.js';
+import { createTablesSQL } from './schema.js';
+import { UserId, GameId, TournamentId, GameResultDB, GameParticipationDB, TournamentResultDB, TournamentParticipationDB, LocalGameDB, LocalGameParticipantDB, LocalTournamentDB } from '../types.js';
 import type { FastifyInstance } from 'fastify';
 
 
@@ -27,6 +27,8 @@ declare module 'fastify' {
       getRecentTournamentsByPlayer(userId: UserId, limit: number): any[];
       getGameById(id: GameId): any;
       getTournamentById(id: TournamentId): any;
+      getLocalGamesByPlayer(userId: UserId, limit: number, offset: number): any[];
+      getLocalTournamentsByPlayer(userId: UserId, limit: number, offset: number): any[];
     };
   }
 }
@@ -70,7 +72,11 @@ async function dbPlugin(fastify: FastifyInstance) {
 
       try {
         transaction();
-      } catch (err) {
+      } catch (err: any) {
+        if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+          fastify.log.warn({ gameId: game.id }, 'Game already saved (duplicate webhook ignored)');
+          return;
+        }
         fastify.log.error({ err, gameId: game.id }, 'DB error: saveGame failed');
         throw err;
       }
@@ -182,6 +188,14 @@ async function dbPlugin(fastify: FastifyInstance) {
 
     getTournamentById(id: TournamentId): any {
       return stmts.getTournamentById.get(id);
+    },
+
+    getLocalGamesByPlayer(userId: UserId, limit: number, offset: number): any[] {
+      return stmts.getLocalGamesByPlayer.all(userId, limit, offset);
+    },
+
+    getLocalTournamentsByPlayer(userId: UserId, limit: number, offset: number): any[] {
+      return stmts.getLocalTournamentsByPlayer.all(userId, limit, offset);
     },
   };
 

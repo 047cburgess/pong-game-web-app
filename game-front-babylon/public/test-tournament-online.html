@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Online Tournament Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #ff1493;
+      margin-top: 0;
+    }
+    h2 {
+      color: #ddd;
+      font-size: 18px;
+      margin-top: 0;
+    }
+    .section {
+      background: #222;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      border-radius: 6px;
+      margin: 5px 0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+      background: #ff1493;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #ff006e;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    button.accept {
+      background: #28a745;
+    }
+    button.accept:hover {
+      background: #1e7e34;
+    }
+    .info-box {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .status {
+      padding: 8px 12px;
+      border-radius: 4px;
+      display: inline-block;
+      font-weight: bold;
+      margin: 5px 0;
+    }
+    .status.waiting { background: #4a4a00; color: #ffeb3b; }
+    .status.ready { background: #1a4d1a; color: #6fdb6f; }
+    .status.complete { background: #333; color: #aaa; }
+    .bracket {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .game-box {
+      background: #333;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 3px solid #ff1493;
+    }
+    .game-box.complete {
+      border-left-color: #28a745;
+    }
+    .player-item {
+      padding: 5px;
+      margin: 3px 0;
+      background: #444;
+      border-radius: 4px;
+    }
+    .player-item.winner {
+      background: #1a4d1a;
+      font-weight: bold;
+    }
+    .hidden { display: none; }
+    .invite-item {
+      background: #333;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 6px;
+      border-left: 3px solid #ffc107;
+    }
+    #gameCanvas {
+      display: none;
+      width: 100%;
+      height: 80vh;
+      margin-top: 20px;
+    }
+    #playerList {
+      display: none;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #readyBtn {
+      display: none;
+      padding: 12px 24px;
+      font-size: 18px;
+      margin: 20px auto;
+      background: #28a745;
+      cursor: pointer;
+    }
+    #readyBtn:hover:not(:disabled) {
+      background: #1e7e34;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Online Tournament Test</h1>
+  <p>Open this page in 4 browsers with different User IDs (1, 2, 3, 4) to test tournament flow.</p>
+
+  <!-- SSE Connection -->
+  <div class="section">
+    <h2>Step 1: Connect SSE</h2>
+    <input type="text" id="userId" placeholder="Your User ID (e.g., 1)">
+    <button id="connectBtn" onclick="connectSSE()">Connect SSE</button>
+    <div id="connectionStatus"></div>
+  </div>
+
+  <!-- Create Tournament (Host only) -->
+  <div class="section" id="createSection" style="display:none;">
+    <h2>Step 2: Create Tournament</h2>
+    <input type="text" id="invitedIds" placeholder="Invite User IDs (comma-separated, e.g., 2,3,4)">
+    <button onclick="createTournament()">Create & Invite Players</button>
+    <div id="createStatus"></div>
+  </div>
+
+  <!-- Incoming Invites -->
+  <div class="section" id="invitesSection" style="display:none;">
+    <h2>Tournament Invites</h2>
+    <div id="inviteList"></div>
+  </div>
+
+  <!-- Tournament Status -->
+  <div class="section" id="statusSection" style="display:none;">
+    <h2>Tournament Status</h2>
+    <div id="tournamentInfo"></div>
+    <div id="bracketDisplay"></div>
+  </div>
+</div>
+
+<div id="playerList"></div>
+<button id="readyBtn">I'm Ready</button>
+<canvas id="gameCanvas"></canvas>
+
+<script src="dist/pong3d.js"></script>
+<script>
+  const MATCHMAKING_URL = 'http://localhost:3000';
+  let userId = null;
+  let evtSource = null;
+  let tournamentId = null;
+  let statusPollInterval = null;
+
+  function connectSSE() {
+    const userIdInput = document.getElementById('userId').value;
+    if (!userIdInput) {
+      alert('Please enter a User ID');
+      return;
+    }
+
+    userId = Number(userIdInput);
+    evtSource = new EventSource(`${MATCHMAKING_URL}/events?user_id=${userId}`);
+
+    evtSource.onopen = () => {
+      document.getElementById('connectionStatus').innerHTML =
+        '<span style="color: #6fdb6f;">SSE Connected</span>';
+      document.getElementById('createSection').style.display = 'block';
+      document.getElementById('invitesSection').style.display = 'block';
+      document.getElementById('connectBtn').disabled = true;
+    };
+
+    evtSource.onmessage = (e) => {
+      if (!e.data) return;
+
+      const msg = JSON.parse(e.data);
+      console.log('SSE event:', msg);
+
+      if (msg.event === 'TournamentInvite') {
+        addTournamentInvite(msg);
+      } else if (msg.event === 'TournamentInviteAccepted') {
+        console.log(`Player ${msg.from} accepted tournament invite`);
+      } else if (msg.event === 'TournamentInviteDeclined') {
+        console.log(`Player ${msg.from} declined tournament invite`);
+      }
+    };
+
+    evtSource.onerror = (e) => {
+      console.error('SSE error', e);
+      document.getElementById('connectionStatus').innerHTML =
+        '<span style="color: #ff6b6b;">SSE Disconnected</span>';
+    };
+  }
+
+  async function createTournament() {
+    const invitedIdsInput = document.getElementById('invitedIds').value;
+    const statusDiv = document.getElementById('createStatus');
+
+    const invitedPlayerIds = invitedIdsInput
+      .split(',')
+      .map(id => Number(id.trim()))
+      .filter(id => !isNaN(id));
+
+    if (invitedPlayerIds.length === 0) {
+      statusDiv.innerHTML = '<p style="color: #ff6b6b;">Please enter valid User IDs</p>';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${MATCHMAKING_URL}/tournaments/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': String(userId)
+        },
+        body: JSON.stringify({ invitedPlayerIds })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create tournament');
+      }
+
+      const data = await response.json();
+      console.log('Tournament created:', data);
+
+      tournamentId = data.tournamentId;
+      statusDiv.innerHTML =
+        `<p style="color: #6fdb6f;">Tournament created! ID: ${tournamentId}</p>`;
+
+      // Show status section and start polling
+      document.getElementById('statusSection').style.display = 'block';
+      startStatusPolling();
+
+    } catch (error) {
+      console.error('Create error:', error);
+      statusDiv.innerHTML = `<p style="color: #ff6b6b;">Error: ${error.message}</p>`;
+    }
+  }
+
+  function addTournamentInvite(msg) {
+    const div = document.createElement('div');
+    div.className = 'invite-item';
+    div.id = `tournament-invite-${msg.tournamentId}`;
+    div.innerHTML = `
+      <strong>Tournament Invite from User ${msg.from}</strong><br>
+      Tournament ID: ${msg.tournamentId}<br>
+      <button class="accept" onclick="acceptTournament('${msg.tournamentId}')">Accept</button>
+      <button onclick="declineTournament('${msg.tournamentId}')">Decline</button>
+    `;
+    document.getElementById('inviteList').appendChild(div);
+  }
+
+  async function acceptTournament(tid) {
+    try {
+      const response = await fetch(`${MATCHMAKING_URL}/tournaments/${tid}/join`, {
+        method: 'POST',
+        headers: { 'x-user-id': String(userId) }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to join');
+      }
+
+      const data = await response.json();
+      console.log('Joined tournament:', data);
+
+      tournamentId = tid;
+      const inviteEl = document.getElementById(`tournament-invite-${tid}`);
+      if (inviteEl) inviteEl.remove();
+
+      // Show status and start polling
+      document.getElementById('statusSection').style.display = 'block';
+      startStatusPolling();
+
+    } catch (error) {
+      console.error('Accept error:', error);
+      alert(`Error: ${error.message}`);
+    }
+  }
+
+  async function declineTournament(tid) {
+    try {
+      const response = await fetch(`${MATCHMAKING_URL}/tournaments/${tid}/decline`, {
+        method: 'DELETE',
+        headers: { 'x-user-id': String(userId) }
+      });
+
+      if (response.ok) {
+        const inviteEl = document.getElementById(`tournament-invite-${tid}`);
+        if (inviteEl) inviteEl.remove();
+      }
+    } catch (error) {
+      console.error('Decline error:', error);
+    }
+  }
+
+  function startStatusPolling() {
+    if (statusPollInterval) clearInterval(statusPollInterval);
+
+    updateStatus();
+    statusPollInterval = setInterval(updateStatus, 2000);
+  }
+
+  async function updateStatus() {
+    if (!tournamentId) return;
+
+    try {
+      const response = await fetch(`${MATCHMAKING_URL}/tournaments/${tournamentId}/status`, {
+        headers: { 'x-user-id': String(userId) }
+      });
+
+      if (!response.ok) return;
+
+      const status = await response.json();
+      console.log('Tournament status:', status);
+
+      displayStatus(status);
+
+    } catch (error) {
+      console.error('Status error:', error);
+    }
+  }
+
+  function displayStatus(status) {
+    const infoDiv = document.getElementById('tournamentInfo');
+    const bracketDiv = document.getElementById('bracketDisplay');
+
+    // Show basic info
+    infoDiv.innerHTML = `
+      <div class="info-box">
+        <strong>Tournament ID:</strong> ${status.tournamentId}<br>
+        <strong>Status:</strong> <span class="status ${status.status}">${status.status}</span><br>
+        <strong>Players:</strong> ${status.registeredPlayers.join(', ')} (${status.registeredPlayers.length}/4)
+      </div>
+    `;
+
+    // Check if player needs to join any ready game
+    checkAndJoinReadyGame(status);
+
+    // Show bracket
+    let bracketHTML = '<div class="bracket">';
+
+    // Semi-finals
+    bracketHTML += '<div>';
+    bracketHTML += renderGame('Semi-Final 1', status.games.semi1);
+    bracketHTML += renderGame('Semi-Final 2', status.games.semi2);
+    bracketHTML += '</div>';
+
+    // Spacer
+    bracketHTML += '<div></div>';
+
+    // Final
+    bracketHTML += '<div>';
+    bracketHTML += renderGame('Final', status.games.final);
+    if (status.winner) {
+      bracketHTML += `<div class="info-box" style="margin-top: 20px;"><strong>Champion:</strong> User ${status.winner}</div>`;
+    }
+    bracketHTML += '</div>';
+
+    bracketHTML += '</div>';
+    bracketDiv.innerHTML = bracketHTML;
+  }
+
+  let joinedGames = new Set();
+
+  async function checkAndJoinReadyGame(status) {
+    // Check each game
+    const games = [status.games.semi1, status.games.semi2, status.games.final];
+
+    for (const game of games) {
+      if (!game || !game.id || game.status !== 'ready') continue;
+      if (joinedGames.has(game.id)) continue;
+
+      // Check if current user is in this game
+      const isInGame = game.players.some(p => p.id === userId);
+
+      //TODO: Announce the next match
+      
+
+      if (!isInGame) {
+        // Spectator join
+        try {
+          console.log(`Joining game ${game.id} as spectator...`);
+          const response = await fetch(`${MATCHMAKING_URL}/games/${game.id}/view`, {
+            method: 'POST',
+            headers: { 'x-user-id': String(userId) }
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to join game as spectator');
+          }
+
+          const viewingData = await response.json();
+          console.log('Got viewing key:', viewingData);
+
+          joinedGames.add(game.id);
+          launchGame(viewingData.viewingKey);
+          break; // Exit after joining as spectator
+        } catch (error) {
+          console.error('Spectator join error:', error);
+        }
+      } else {
+        // Player join - only if user is in this game
+        try {
+          console.log(`Joining game ${game.id} as player...`);
+          const response = await fetch(`${MATCHMAKING_URL}/games/${game.id}/join`, {
+            method: 'POST',
+            headers: { 'x-user-id': String(userId) }
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to join game');
+          }
+
+          const gameKey = await response.json();
+          console.log('Got game key:', gameKey);
+
+          joinedGames.add(game.id);
+          launchGame(gameKey.key);
+          break; // Only join one game at a time
+
+        } catch (error) {
+          console.error('Join game error:', error);
+        }
+      }
+    }
+  }
+
+  let pongAppInstance = null;
+
+  function launchGame(gameKey) {
+    // Stop polling
+    if (statusPollInterval) {
+      clearInterval(statusPollInterval);
+      statusPollInterval = null;
+    }
+
+    console.log('Launching game with key:', gameKey);
+
+    // Hide tournament UI
+    document.querySelector('.container').classList.add('hidden');
+
+    // Show game elements
+    document.getElementById('gameCanvas').style.display = 'block';
+    document.getElementById('playerList').style.display = 'block';
+    // Only show ready button for players, not viewers
+    const isViewer = gameKey.startsWith('view_');
+    if (!isViewer) {
+      document.getElementById('readyBtn').style.display = 'block';
+    }
+
+    // Connect to game
+    const WS_URL = 'ws://localhost:3001/ws';
+    if (window.PongApp) {
+      pongAppInstance = new window.PongApp(WS_URL, gameKey, userId);
+
+      document.getElementById('readyBtn').onclick = () => {
+        if (pongAppInstance && pongAppInstance.sock) {
+          pongAppInstance.sock.send(JSON.stringify({ type: "ready" }));
+          document.getElementById('readyBtn').disabled = true;
+          document.getElementById('readyBtn').textContent = 'Ready!';
+          console.log("Sent: ready");
+        }
+      };
+
+      // Listen for game end to return to tournament
+      const playerWs = pongAppInstance.player1?.ws;
+      if (playerWs) {
+        playerWs.addEventListener('message', (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'game_end') {
+              handleGameEnd();
+            }
+          } catch (err) {
+            // Ignore
+          }
+        });
+      }
+    } else {
+      alert('PongApp not loaded!');
+    }
+  }
+
+  function handleGameEnd() {
+    console.log('Game ended, returning to tournament...');
+
+    // Hide game elements
+    document.getElementById('gameCanvas').style.display = 'none';
+    document.getElementById('playerList').style.display = 'none';
+    document.getElementById('readyBtn').style.display = 'none';
+    document.getElementById('readyBtn').disabled = false;
+    document.getElementById('readyBtn').textContent = "I'm Ready";
+
+    // Show tournament UI again
+    document.querySelector('.container').classList.remove('hidden');
+
+    // Resume polling
+    startStatusPolling();
+  }
+
+  function renderGame(title, game) {
+    if (!game || !game.id) {
+      return `<div class="game-box"><strong>${title}</strong><div>Waiting...</div></div>`;
+    }
+
+    const isComplete = game.status === 'complete';
+    const players = game.players || [];
+
+    let html = `<div class="game-box ${isComplete ? 'complete' : ''}">`;
+    html += `<strong>${title}</strong><br>`;
+    html += `<small>Status: ${game.status}</small><br>`;
+
+    if (players.length > 0) {
+      players.forEach(p => {
+        const isWinner = p.id === game.winner;
+        html += `<div class="player-item ${isWinner ? 'winner' : ''}">User ${p.id}: ${p.score}</div>`;
+      });
+    }
+
+    html += '</div>';
+    return html;
+  }
+</script>
+
+</body>
+</html>

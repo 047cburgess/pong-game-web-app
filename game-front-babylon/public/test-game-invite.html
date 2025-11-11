@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Remote Custom Invite Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #111;
+      color: #eee;
+    }
+    .section {
+      margin-bottom: 20px;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    h1, h2 {
+      color: #ff1493;
+      margin-top: 0;
+    }
+    button {
+      padding: 10px 16px;
+      margin: 4px;
+      background: #ff1493;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) {
+      background: #ff006e;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    button.accept {
+      background: #28a745;
+    }
+    button.accept:hover {
+      background: #1e7e34;
+    }
+    button.decline {
+      background: #666;
+    }
+    button.decline:hover {
+      background: #555;
+    }
+    input {
+      padding: 8px;
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      border-radius: 4px;
+      margin: 0 5px;
+    }
+    .invites {
+      margin-top: 10px;
+    }
+    .invite-item {
+      background: #333;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 6px;
+      border-left: 3px solid #ffc107;
+    }
+    .notification-item {
+      background: #333;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 6px;
+    }
+    .notification-item.accepted {
+      border-left: 3px solid #28a745;
+    }
+    .notification-item.declined {
+      border-left: 3px solid #dc3545;
+    }
+    #gameCanvas {
+      display: none;
+      width: 100%;
+      height: 70vh;
+      margin-top: 20px;
+    }
+    #playerList {
+      padding: 10px;
+      font-size: 16px;
+    }
+    #readyBtn {
+      display: none;
+      padding: 12px 24px;
+      font-size: 18px;
+      margin: 20px auto;
+      background: #28a745;
+    }
+    #readyBtn:hover:not(:disabled) {
+      background: #1e7e34;
+    }
+    .hidden {
+      display: none;
+    }
+    .success {
+      color: #6fdb6f;
+    }
+  </style>
+</head>
+<body>
+  <h1>Remote Custom Invite Test</h1>
+  <h2>Open 2 browsers, enter userID 1 in first, userId2 in second to connect to SSE.</h2>
+
+  <div class="section">
+    <label>User ID: <input type="number" id="userId" placeholder="1 or 2"></label>
+    <button id="connectBtn">Connect SSE</button>
+    <div id="connectionStatus"></div>
+  </div>
+
+  <div class="section" id="sendInviteSection" style="display:none;">
+    <h2>Send Game Invite</h2>
+    <label>Invite Player ID: <input type="number" id="inviteeId" placeholder="2"></label>
+    <button id="sendInviteBtn">Send Invite</button>
+    <div id="inviteResult"></div>
+  </div>
+
+  <div class="section" id="incomingInvites" style="display:none;">
+    <h2>Incoming Invites</h2>
+    <div id="inviteList" class="invites"></div>
+  </div>
+
+  <div class="section" id="notificationsSection" style="display:none;">
+    <h2>Notifications</h2>
+    <div id="notificationsList"></div>
+  </div>
+
+  <div id="playerList"></div>
+  <button id="readyBtn">I'm Ready</button>
+  <canvas id="gameCanvas"></canvas>
+
+  <script src="dist/pong3d.js"></script>
+  <script>
+    const API_URL = 'http://localhost:3000';
+    const WS_URL = 'ws://localhost:3001/ws';
+    let userId = null;
+    let evtSource = null;
+    let myToken = null;
+    let pongAppInstance = null;
+
+    document.getElementById('connectBtn').addEventListener('click', () => {
+      userId = Number(document.getElementById('userId').value);
+      if (!userId) return alert("Enter a valid user ID");
+
+      // Connect to SSE
+      evtSource = new EventSource(`${API_URL}/events?user_id=${userId}`);
+
+      evtSource.onopen = () => {
+        document.getElementById('connectionStatus').innerHTML =
+          '<span class="success">SSE Connected</span>';
+      };
+
+      evtSource.onmessage = (e) => {
+        if (!e.data) return; // Heartbeat ping
+
+        const msg = JSON.parse(e.data);
+        console.log('SSE event:', msg);
+
+        if (msg.event === "GameInvite") {
+          addIncomingInvite(msg);
+        } else if (msg.event === "InviteAccepted") {
+          addNotification(`Player ${msg.playerId} accepted your invite for game ${msg.gameId}`, 'accepted');
+        } else if (msg.event === "InviteDeclined") {
+          addNotification(`Player ${msg.playerId} declined your invite for game ${msg.gameId}`, 'declined');
+        }
+      };
+
+      evtSource.onerror = (e) => {
+        console.error("SSE error", e);
+        document.getElementById('connectionStatus').innerHTML =
+          '<span style="color: #ff6b6b;">SSE Disconnected</span>';
+      };
+
+      document.getElementById('sendInviteSection').style.display = 'block';
+      document.getElementById('incomingInvites').style.display = 'block';
+      document.getElementById('notificationsSection').style.display = 'block';
+      document.getElementById('connectBtn').disabled = true;
+    });
+
+    document.getElementById('sendInviteBtn').addEventListener('click', async () => {
+      const inviteeId = Number(document.getElementById('inviteeId').value);
+      if (!inviteeId) return alert("Enter invitee ID");
+
+      try {
+        const res = await fetch(`${API_URL}/games/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId
+          },
+          body: JSON.stringify({ numberOfPlayers: 2, invitedPlayerIds: [inviteeId] })
+        });
+        const data = await res.json();
+
+        myToken = data.key;
+        document.getElementById('inviteResult').innerHTML =
+          `<span class="success">Invite sent! Game ID: ${data.gameId}</span><br>` +
+          `<button onclick="launchGame()">Launch Game</button>`;
+
+      } catch (err) {
+        console.error(err);
+        alert('Failed to send invite');
+      }
+    });
+
+    function addIncomingInvite(msg) {
+      const div = document.createElement('div');
+      div.className = 'invite-item';
+      div.id = `invite-${msg.gameId}`;
+      div.innerHTML = `
+        <strong>Invite from User #${msg.from}</strong><br>
+        Game ID: ${msg.gameId}<br>
+        <button class="accept" onclick="acceptInvite('${msg.gameId}')">Accept & Join</button>
+        <button class="decline" onclick="declineInvite('${msg.gameId}')">Decline</button>
+      `;
+      document.getElementById('inviteList').appendChild(div);
+    }
+
+    function addNotification(message, type) {
+      const div = document.createElement('div');
+      div.className = `notification-item ${type}`;
+      div.textContent = message;
+      document.getElementById('notificationsList').appendChild(div);
+    }
+
+    async function acceptInvite(gameId) {
+      try {
+        const res = await fetch(`${API_URL}/games/${gameId}/join`, {
+          method: 'POST',
+          headers: { 'x-user-id': userId }
+        });
+        const data = await res.json();
+
+        myToken = data.key;
+        console.log('Joined game! Token:', data.key);
+
+        // Remove the invite from the list
+        const inviteEl = document.getElementById(`invite-${gameId}`);
+        if (inviteEl) inviteEl.remove();
+
+        // Auto-launch the game
+        launchGame();
+
+      } catch (err) {
+        console.error(err);
+        alert('Failed to join game');
+      }
+    }
+
+    async function declineInvite(gameId) {
+      try {
+        const res = await fetch(`${API_URL}/games/${gameId}/decline`, {
+          method: 'DELETE',
+          headers: {
+            'x-user-id': String(userId)
+          }
+        });
+
+        if (res.ok) {
+          console.log('Declined invite for game:', gameId);
+          // Remove the invite from the list
+          const inviteEl = document.getElementById(`invite-${gameId}`);
+          if (inviteEl) inviteEl.remove();
+        } else {
+          const errorText = await res.text();
+          console.error('Decline failed:', res.status, errorText);
+          alert(`Failed to decline invite: ${errorText}`);
+        }
+
+      } catch (err) {
+        console.error('Decline error:', err);
+        alert('Failed to decline invite');
+      }
+    }
+
+    function launchGame() {
+      if (!myToken || !userId) {
+        alert('Missing token or user ID');
+        return;
+      }
+
+      // Hide UI sections
+      document.getElementById('sendInviteSection').classList.add('hidden');
+      document.getElementById('incomingInvites').classList.add('hidden');
+
+      // Show game
+      document.getElementById('gameCanvas').style.display = 'block';
+      document.getElementById('playerList').style.display = 'block';
+      document.getElementById('readyBtn').style.display = 'block';
+
+      // Connect to game
+      if (window.PongApp) {
+        pongAppInstance = new window.PongApp(WS_URL, myToken, userId);
+
+        // Setup ready button
+        document.getElementById('readyBtn').onclick = () => {
+          if (pongAppInstance && pongAppInstance.sock) {
+            pongAppInstance.sock.send(JSON.stringify({ type: "ready" }));
+            document.getElementById('readyBtn').disabled = true;
+            document.getElementById('readyBtn').textContent = 'Ready!';
+            console.log("Sent: ready");
+          }
+        };
+      } else {
+        alert('PongApp not loaded!');
+      }
+    }
+  </script>
+</body>
+</html>

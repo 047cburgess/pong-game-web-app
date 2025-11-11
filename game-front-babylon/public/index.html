@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ponggers</title>
+</head>
+<body>
+    <div style="display: flex; flex-direction: column;">
+      <input type="text" id="tok1" placeholder="Player Token1">
+      <input type="number" id="userId1" placeholder="Player1 UserId">
+      <input type="text" id="tok2" placeholder="Player Token2">
+      <input type="number" id="userId2" placeholder="Player2 UserId">
+      <input type="text" id="tok3" placeholder="Player Token3">
+      <input type="text" id="tok4" placeholder="Player Token4">
+      <button id="launchButton">Launch</button>
+    </div>
+
+    <script>
+        document.getElementById('launchButton').addEventListener('click', () => {
+            const tok1 = document.getElementById('tok1').value;
+            const tok2 = document.getElementById('tok2').value;
+            const tok3 = document.getElementById('tok3').value;
+            const tok4 = document.getElementById('tok4').value;
+            const id1 = document.getElementById('userId1').value;
+            const id2 = document.getElementById('userId2').value;
+            const pongApp = new window.PongApp('ws://localhost:8000/ws', tok1, tok2, tok3, tok4, id1, id2);
+        });
+    </script>
+
+    <canvas id="gameCanvas" style="width: 100%; height: 100%;"></canvas>
+    
+    <p id="debugtext"></p>
+</body>
+</html>

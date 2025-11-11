@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Remote Custom Game - 2 - 4 Players</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #111;
+      color: #eee;
+    }
+    canvas {
+      width: 100%;
+      height: 80vh;
+      display: block;
+    }
+    .container {
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 25px;
+      background: #222;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      margin-top: 0;
+      color: #ff1493;
+      font-size: 24px;
+    }
+    h2 {
+      color: #ddd;
+      font-size: 18px;
+      margin-top: 20px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 8px;
+    }
+    .section {
+      margin: 20px 0;
+    }
+    .info-box {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 13px;
+      word-break: break-all;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    input[type="text"].inline {
+      width: auto;
+      min-width: 150px;
+      margin: 5px;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+      background: #ff1493;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #ff006e;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: #666;
+    }
+    button.secondary:hover:not(:disabled) {
+      background: #777;
+    }
+    .hidden {
+      display: none !important;
+    }
+    #playerList, #debugtext {
+      padding: 10px;
+      font-size: 16px;
+    }
+    #gameCanvas {
+      display: none;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .status.success {
+      background: #1a4d1a;
+      color: #6fdb6f;
+    }
+    .status.error {
+      background: #4d1a1a;
+      color: #ff6b6b;
+    }
+    #readyBtn {
+      display: none;
+      margin: 20px auto;
+      font-size: 18px;
+      background: #28a745;
+    }
+    #readyBtn:hover:not(:disabled) {
+      background: #1e7e34;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Remote Custom Game</h1>
+
+  <!-- Host: Create Game -->
+  <div id="createSection" class="section">
+    <h2>Host: Create New Game</h2>
+
+    <label style="display: block; margin: 10px 0;">
+      <strong>Number of Players:</strong>
+    </label>
+    <div style="margin: 10px 0;">
+      <button onclick="selectPlayerCount(2)" id="btn2pl" class="secondary">2 Players</button>
+      <button onclick="selectPlayerCount(3)" id="btn3pl" class="secondary">3 Players</button>
+      <button onclick="selectPlayerCount(4)" id="btn4pl" class="secondary">4 Players</button>
+    </div>
+
+    <label style="display: block; margin: 10px 0;">
+      <strong>Host user Id:</strong>
+    <input type="text" id="hostUserId" placeholder="Your User ID (e.g., 1)" value="1">
+    </label>
+
+
+    <div id="invitedPlayersInputs"></div>
+
+    <button onclick="createGame()" id="createGameBtn">Create Game & Invite Players</button>
+    <div id="createStatus"></div>
+  </div>
+
+  <!-- Host: Connection Info -->
+  <div id="hostConnectSection" class="section hidden">
+    <h2>Host: Connect to Game</h2>
+    <div class="info-box">
+      <strong>Game ID:</strong> <span id="gameIdDisplay"></span><br>
+      <strong>Your Token:</strong> <span id="hostTokenDisplay"></span>
+    </div>
+    <button onclick="connectAsHost()">Connect to Game</button>
+    <div id="shareUrls"></div>
+  </div>
+
+  <!-- Invited Player: Accept Invite -->
+  <div id="inviteSection" class="section hidden">
+	  <h2>Join Game</h2>
+    <div class="info-box">
+      <strong>Game ID:</strong> <span id="joinGameIdDisplay"></span>
+    </div>
+    <input type="text" id="joinUserId" placeholder="Your User ID (e.g., 2)">
+    <button onclick="acceptInvite()">Accept Invite & Join</button>
+    <div id="joinStatus"></div>
+  </div>
+</div>
+
+<div id="playerList"></div>
+<div id="debugtext"></div>
+<button id="readyBtn">I'm Ready</button>
+<canvas id="gameCanvas"></canvas>
+
+<script src="dist/pong3d.js"></script>
+<script>
+const MATCHMAKING_URL = 'http://localhost:3000';
+const GAME_SERVICE_URL = 'http://localhost:3001';
+const WS_URL = 'ws://localhost:3001/ws';
+
+let gameId = null;
+let hostToken = null;
+let myUserId = null;
+let playerCount = 2;
+let invitedUserIds = [];
+
+// Select player count and generate input fields
+function selectPlayerCount(count) {
+  playerCount = count;
+
+  // Update button styles
+  ['2', '3', '4'].forEach(n => {
+    const btn = document.getElementById(`btn${n}pl`);
+    if (n === String(count)) {
+      btn.style.background = '#ff1493';
+    } else {
+      btn.style.background = '#666';
+    }
+  });
+
+  // Generate invited player input fields
+  const container = document.getElementById('invitedPlayersInputs');
+  container.innerHTML = '';
+
+  for (let i = 1; i < count; i++) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `invitedUserId${i}`;
+    input.placeholder = `Player ${i + 1} User ID (e.g., ${i + 1})`;
+    input.value = String(i + 1);
+    container.appendChild(input);
+  }
+}
+
+// Create game via matchmaking service
+async function createGame() {
+  const hostUserIdInput = document.getElementById('hostUserId').value;
+  const statusDiv = document.getElementById('createStatus');
+
+  if (!hostUserIdInput) {
+    statusDiv.innerHTML = '<div class="status error">Please enter your User ID</div>';
+    return;
+  }
+
+  myUserId = Number(hostUserIdInput);
+
+  // Collect invited user IDs
+  invitedUserIds = [];
+  for (let i = 1; i < playerCount; i++) {
+    const input = document.getElementById(`invitedUserId${i}`);
+    if (!input || !input.value) {
+      statusDiv.innerHTML = `<div class="status error">Please enter User ID for Player ${i + 1}</div>`;
+      return;
+    }
+    invitedUserIds.push(Number(input.value));
+  }
+
+  try {
+    const response = await fetch(`${MATCHMAKING_URL}/games/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': String(myUserId)
+      },
+      body: JSON.stringify({
+        numberOfPlayers: playerCount,
+        invitedPlayerIds: invitedUserIds
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create game');
+    }
+
+    const data = await response.json();
+    console.log('Game created:', data);
+
+    gameId = data.gameId;
+    hostToken = data.key;
+
+    // Show success and connection section
+    statusDiv.innerHTML = '<div class="status success">✓ Game created successfully!</div>';
+    document.getElementById('gameIdDisplay').textContent = gameId;
+    document.getElementById('hostTokenDisplay').textContent = hostToken;
+
+    // Generate share URLs for each invited player
+    const shareUrlsDiv = document.getElementById('shareUrls');
+    shareUrlsDiv.innerHTML = '<div class="info-box"><strong>Share with invited players:</strong></div>';
+
+    invitedUserIds.forEach((userId, idx) => {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?gameId=${gameId}&userId=${userId}`;
+      const urlBox = document.createElement('div');
+      urlBox.className = 'info-box';
+      urlBox.innerHTML = `
+        <strong>Player ${idx + 2} (ID: ${userId}):</strong><br>
+        <span style="font-size: 12px;">${shareUrl}</span><br>
+        <button class="secondary" onclick="copyToClipboard('${shareUrl}')" style="margin-top: 5px;">Copy URL</button>
+      `;
+      shareUrlsDiv.appendChild(urlBox);
+    });
+
+    document.getElementById('createSection').classList.add('hidden');
+    document.getElementById('hostConnectSection').classList.remove('hidden');
+
+  } catch (error) {
+    statusDiv.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text);
+  alert('Invite URL copied to clipboard!');
+}
+
+// Host connects to game
+function connectAsHost() {
+  if (!hostToken || !myUserId) return;
+
+  document.querySelector('.container').classList.add('hidden');
+  document.getElementById('gameCanvas').style.display = 'block';
+  document.getElementById('playerList').style.display = 'block';
+  document.getElementById('readyBtn').style.display = 'block';
+
+  connectToGame(hostToken, myUserId);
+}
+
+// Invited player accepts invite
+async function acceptInvite() {
+  const userIdInput = document.getElementById('joinUserId').value;
+  const statusDiv = document.getElementById('joinStatus');
+
+  if (!userIdInput || !gameId) {
+    statusDiv.innerHTML = '<div class="status error">Please enter your User ID</div>';
+    return;
+  }
+
+  myUserId = Number(userIdInput);
+
+  try {
+    const response = await fetch(`${MATCHMAKING_URL}/games/${gameId}/join`, {
+      method: 'POST',
+      headers: {
+        'x-user-id': String(myUserId)
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to join game');
+    }
+
+    const data = await response.json();
+    console.log('Joined game:', data);
+
+    const playerToken = data.key;
+
+    // Hide UI and connect
+    document.querySelector('.container').classList.add('hidden');
+    document.getElementById('gameCanvas').style.display = 'block';
+    document.getElementById('playerList').style.display = 'block';
+    document.getElementById('readyBtn').style.display = 'block';
+
+    connectToGame(playerToken, myUserId);
+
+  } catch (error) {
+    statusDiv.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+  }
+}
+
+function connectToGame(token, userId) {
+  console.log('Connecting to game with token:', token, 'userId:', userId);
+
+  if (window.PongApp) {
+    window.PongAppInstance = new window.PongApp(`${WS_URL}`, token, userId);
+
+    document.getElementById('readyBtn').onclick = () => {
+      if (window.PongAppInstance && window.PongAppInstance.sock) {
+        window.PongAppInstance.sock.send(JSON.stringify({ type: "ready" }));
+        document.getElementById('readyBtn').disabled = true;
+        document.getElementById('readyBtn').textContent = `Let's go baby!`;
+        console.log("Sent: ready");
+      }
+    };
+  }
+}
+
+// Auto-load invite if URL has gameId parameter
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const gameIdFromUrl = urlParams.get('gameId');
+  const userIdFromUrl = urlParams.get('userId');
+
+  if (gameIdFromUrl) {
+    gameId = gameIdFromUrl;
+
+    // Hide create section, show invite section
+    document.getElementById('createSection').classList.add('hidden');
+    document.getElementById('joinGameIdDisplay').textContent = gameId;
+    document.getElementById('inviteSection').classList.remove('hidden');
+
+    if (userIdFromUrl) {
+      document.getElementById('joinUserId').value = userIdFromUrl;
+    }
+  } else {
+    // Initialize with 2 players by default
+    selectPlayerCount(2);
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { NewGameResponse, NewGameRequest, NewTournamentGameRequest, NewTournamentGameResponse } from '../types';
+import { NewGameResponse, NewGameRequest, NewTournamentGameRequest, NewTournamentGameResponse } from '../types.js';
 
 export class GameServiceClient {
 	private client: AxiosInstance;
@@ -17,20 +17,20 @@ export class GameServiceClient {
 	// Create a new custom/matchmaking game (classic mode)
 	async createGame(request: NewGameRequest): Promise<NewGameResponse> {
 		try {
-			const response: NewGameResponse = await this.client.post('/internal/games/classic/create', request);
-			return response;
+			const response = await this.client.post<NewGameResponse>('/internal/games/classic/create', request);
+			return response.data;
 		} catch (err: any) {
-			throw new Error(`Failed to communicate with game service: ${err.message}`);
+			throw new Error(`Failed to communicate with game service creating classic game: ${err.message}`);
 		}
 	}
 
 	// Create a new tournament game (tournament mode)
 	async createTournamentGame(request: NewTournamentGameRequest): Promise<NewTournamentGameResponse> {
 		try {
-			const response: NewTournamentGameResponse = await this.client.post('/internal/games/tournament/create', request);
-			return response;
+			const response = await this.client.post<NewTournamentGameResponse>('/internal/games/tournament/create', request);
+			return response.data;
 		} catch (err: any) {
-			throw new Error(`Failed to communicate with game service: ${err.message}`);
+			throw new Error(`Failed to communicate with game service creating tournament game: ${err.message}`);
 		}
 	}
 }

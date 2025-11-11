@@ -177,6 +177,33 @@ export function prepareStatements(db: Database.Database) {
       INSERT INTO local_tournaments (tournament_id, host_id, guest1_name, guest2_name, guest3_name, semi1_id, semi2_id, final_id, winner_type, winner_name, date)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `),
+
+    getLocalGamesByPlayer: db.prepare(`
+      SELECT
+        lg.game_id,
+        lg.host_id,
+        lg.date,
+        lg.duration,
+        lg.winner_type,
+        lg.winner_guest_name,
+        json_group_array(
+          json_object('position', lgp.position, 'guestName', lgp.guest_name, 'score', lgp.score)
+        ) AS participants
+      FROM local_games lg
+      JOIN local_game_participants lgp ON lg.game_id = lgp.game_id
+      WHERE lg.host_id = ?
+      GROUP BY lg.game_id
+      ORDER BY lg.date DESC
+      LIMIT ? OFFSET ?
+    `),
+
+    getLocalTournamentsByPlayer: db.prepare(`
+      SELECT *
+      FROM local_tournaments
+      WHERE host_id = ?
+      ORDER BY date DESC
+      LIMIT ? OFFSET ?
+    `),
   };
 }
 

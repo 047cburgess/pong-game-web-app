@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>2 Player Queue Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #ff1493;
+      margin-top: 0;
+    }
+    .section {
+      background: #222;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 8px;
+    }
+    h2 {
+      color: #ddd;
+      margin-top: 0;
+      font-size: 18px;
+    }
+    input[type="text"] {
+      width: 200px;
+      padding: 10px;
+      font-size: 16px;
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      border-radius: 6px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+      background: #ff1493;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #ff006e;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    .status {
+      margin: 15px 0;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .status.waiting {
+      background: #4a4a00;
+      color: #ffeb3b;
+    }
+    .status.matched {
+      background: #1a4d1a;
+      color: #6fdb6f;
+    }
+    .status.error {
+      background: #4d1a1a;
+      color: #ff6b6b;
+    }
+    .info-box {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    #gameCanvas {
+      display: none;
+      width: 100%;
+      height: 70vh;
+      margin-top: 20px;
+    }
+    #playerList {
+      padding: 10px;
+      font-size: 16px;
+    }
+    #readyBtn {
+      display: none;
+      padding: 12px 24px;
+      font-size: 18px;
+      margin: 20px auto;
+      background: #28a745;
+    }
+    #readyBtn:hover:not(:disabled) {
+      background: #1e7e34;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>2 Player Queue Test</h1>
+  <p>Open this page in two browsers with different User IDs to test matchmaking queue.</p>
+
+  <div class="section">
+    <h2>Join Queue</h2>
+    <input type="text" id="userId" placeholder="Your User ID (e.g., 1)">
+    <button id="joinQueueBtn" onclick="joinQueue()">Join Queue</button>
+    <div id="queueStatus"></div>
+  </div>
+
+  <div class="section hidden" id="matchedSection">
+    <h2>Match Found!</h2>
+    <div class="info-box">
+      <strong>Game ID:</strong> <span id="gameIdDisplay"></span><br>
+      <strong>Your Token:</strong> <span id="tokenDisplay"></span>
+    </div>
+    <button onclick="launchGame()">Launch Game</button>
+  </div>
+</div>
+
+<div id="playerList"></div>
+<button id="readyBtn">I'm Ready</button>
+<canvas id="gameCanvas"></canvas>
+
+<script src="dist/pong3d.js"></script>
+<script>
+  const MATCHMAKING_URL = 'http://localhost:3000';
+  const WS_URL = 'ws://localhost:3001/ws';
+
+  let userId = null;
+  let myToken = null;
+  let gameId = null;
+  let pongAppInstance = null;
+
+  async function joinQueue() {
+    const userIdInput = document.getElementById('userId').value;
+    if (!userIdInput) {
+      alert('Please enter a User ID');
+      return;
+    }
+
+    userId = Number(userIdInput);
+    const statusDiv = document.getElementById('queueStatus');
+    const joinBtn = document.getElementById('joinQueueBtn');
+
+    try {
+      statusDiv.innerHTML = '<div class="status waiting">Joining queue...</div>';
+      joinBtn.disabled = true;
+
+      const response = await fetch(`${MATCHMAKING_URL}/queue/join`, {
+        method: 'POST',
+        headers: {
+          'x-user-id': String(userId)
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to join queue');
+      }
+
+      const data = await response.json();
+      console.log('Queue response:', data);
+
+      myToken = data.key;
+      gameId = data.gameId;
+
+      // Show waiting status initially
+      statusDiv.innerHTML = '<div class="status waiting">Waiting for opponent...</div>';
+      document.getElementById('gameIdDisplay').textContent = gameId;
+      document.getElementById('tokenDisplay').textContent = myToken;
+
+      // Connect to game to detect when opponent joins
+      if (window.PongApp) {
+        pongAppInstance = new window.PongApp(WS_URL, myToken, userId);
+
+        // Listen for when both players have joined (via player_list message)
+        const checkInterval = setInterval(() => {
+          if (pongAppInstance && pongAppInstance.playerUserIds && pongAppInstance.playerUserIds.size >= 2) {
+            clearInterval(checkInterval);
+            statusDiv.innerHTML = '<div class="status matched">Match found!</div>';
+            document.getElementById('matchedSection').classList.remove('hidden');
+          }
+        }, 500);
+      }
+
+    } catch (error) {
+      console.error('Queue error:', error);
+      statusDiv.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+      joinBtn.disabled = false;
+    }
+  }
+
+  function launchGame() {
+    if (!pongAppInstance) {
+      alert('Not connected to game');
+      return;
+    }
+
+    // Hide setup UI
+    document.querySelector('.container').classList.add('hidden');
+
+    // Show game
+    document.getElementById('gameCanvas').style.display = 'block';
+    document.getElementById('playerList').style.display = 'block';
+    document.getElementById('readyBtn').style.display = 'block';
+
+    // Setup ready button (game already connected from joinQueue)
+    document.getElementById('readyBtn').onclick = () => {
+      if (pongAppInstance && pongAppInstance.sock) {
+        pongAppInstance.sock.send(JSON.stringify({ type: "ready" }));
+        document.getElementById('readyBtn').disabled = true;
+        document.getElementById('readyBtn').textContent = 'Ready!';
+        console.log("Sent: ready");
+      }
+    };
+  }
+</script>
+
+</body>
+</html>

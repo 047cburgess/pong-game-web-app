@@ -5,9 +5,9 @@ import {
 	joinTournamentSchema,
 	declineTournamentSchema,
 	getTournamentStatusSchema
-} from './tournament.schemas';
-import { UnauthorizedError } from '../utils/errors';
-import { NewTournamentRequest, InviteToTournamentRequest } from '../types';
+} from './tournament.schemas.js';
+import { UnauthorizedError } from '../utils/errors.js';
+import { NewTournamentRequest, InviteToTournamentRequest } from '../types.js';
 
 export default async function tournamentRoutes(fastify: FastifyInstance) {
 

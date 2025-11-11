@@ -1,5 +1,5 @@
-import type { components as PublicAPIComponents } from './@types/PublicAPI';
-import type { components as InternalAPIComponents } from './@types/InternalApi';
+import type { components as PublicAPIComponents } from './@types/PublicAPI.js';
+import type { components as InternalAPIComponents } from './@types/InternalApi.js';
 
 export type GameResultAPI = PublicAPIComponents['schemas']['GameResult'];
 export type TournamentResultAPI = PublicAPIComponents['schemas']['TournamentResult'];
@@ -20,14 +20,12 @@ export type NewGameRequest = InternalAPIComponents['schemas']['NewGameRequest'];
 export type NewGameResponse = InternalAPIComponents['schemas']['NewGameResponse'];
 export type NewTournamentGameResponse = InternalAPIComponents['schemas']['NewTournamentGameResponse'];
 
-// Helper type extracted from GameStatsAPI for internal use
 export interface PlayerStatsAPI {
   wins: number;
   draws: number;
   losses: number;
 }
 
-// Helper type extracted from GameStatsAPI for internal use
 export interface DailyPlayerStatsAPI {
   day: string;
   wins: number;
@@ -121,6 +119,7 @@ export interface LocalTournamentDB {
 // INTERNAL API TYPES (not in TypeSpec - custom request bodies)
 export interface NewTournamentGameRequest {
 	nPlayers: number;
+	hook?: string;
 }
 
 export interface NewTournamentRequest {

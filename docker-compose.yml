@@ -2,6 +2,9 @@ services:
   game-service:
     build: ./backend/game_service
     container_name: game-service
+    volumes:
+      - ./backend/game_service:/app
+      - /app/node_modules
     ports:
       - "3001:3000"
     networks:
@@ -9,6 +12,9 @@ services:
     environment:
       - LISTEN_PORT=3000
       - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NODE_ENV=${NODE_ENV}
+    command: npm run dev
 
   matchmaking-service:
     build: ./backend/matchmaking_service

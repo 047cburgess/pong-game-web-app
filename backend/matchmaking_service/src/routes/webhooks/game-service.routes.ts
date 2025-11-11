@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { GameResultWebhook } from '../../types';
-import { gameResultWebhookSchema } from './game-service.schemas';
+import { GameResultWebhook } from '../../types.js';
+import { gameResultWebhookSchema } from './game-service.schemas.js';
 
 export default async function webhooksRoutes(fastify: FastifyInstance) {
 	fastify.post<{

@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { getPlayerGamesSchema, getPlayerStatsSchema, getGameByIdSchema, getPlayerTournamentsSchema, getTournamentByIdSchema} from './game-history.schemas';
-import { UnauthorizedError } from '../utils/errors';
+import { getPlayerGamesSchema, getPlayerStatsSchema, getGameByIdSchema, getPlayerTournamentsSchema, getTournamentByIdSchema} from './game-history.schemas.js';
+import { UnauthorizedError } from '../utils/errors.js';
 
 //TODO: proper auth prehandler
 export default async function gameHistoryRoutes(fastify: FastifyInstance) {

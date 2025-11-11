@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { joinQueueSchema } from './queue.schemas';
-import { UnauthorizedError } from '../utils/errors';
+import { joinQueueSchema } from './queue.schemas.js';
+import { UnauthorizedError } from '../utils/errors.js';
 
 export default async function queueRoutes(fastify: FastifyInstance) {
 

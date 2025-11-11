@@ -1,9 +1,9 @@
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
-import { GameServiceClient } from '../clients/game-service.client';
-import { EventManager} from './EventManager';
-import { GameRegistry } from './GameRegistry';
-import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from '../utils/errors';
+import { GameServiceClient } from '../clients/game-service.client.js';
+import { EventManager} from './EventManager.js';
+import { GameRegistry } from './GameRegistry.js';
+import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from '../utils/errors.js';
 import {
 	GameKey,
 	TournamentId,
@@ -23,8 +23,8 @@ import {
 	Tournament,
 	Player,
 	TournamentGameStage
-} from '../types';
-import { TournamentInviteResponseEvent } from './EventManager';
+} from '../types.js';
+import { TournamentInviteResponseEvent } from './EventManager.js';
 
 const CAPACITY = 4;
 
@@ -36,6 +36,7 @@ export class TournamentManager {
   private db: FastifyInstance['db'];
   private tournaments: Map<TournamentId, Tournament>;
   private games: Map<GameId, TournamentGame>;
+  private cleanupTimeouts: Map<TournamentId, NodeJS.Timeout>;
 
   constructor(
     gameClient: GameServiceClient,
@@ -49,8 +50,9 @@ export class TournamentManager {
     this.eventManager = eventManager;
     this.gameRegistry = gameRegistry;
     this.db = db;
-    this.tournaments = new Map(); // tournament state
-    this.games = new Map(); // tournament games state
+    this.tournaments = new Map();
+    this.games = new Map();
+    this.cleanupTimeouts = new Map();
   }
 
   private getTournament(tournamentId: TournamentId): Tournament {
@@ -125,13 +127,17 @@ export class TournamentManager {
   async createTournamentGame(tournamentId: TournamentId, stage: TournamentGameStage, players: Player[]): Promise<TournamentGame> {
     this.log.info({ tournamentId, stage, players: players.map(p => p.id) }, 'Creating tournament game');
 
-    const response = await this.gameClient.createTournamentGame({ nPlayers: 2 });
+    const webhookUrl = `${process.env.SERVICE_URL}/webhooks/games/GAME_ID/result`;
+    const response = await this.gameClient.createTournamentGame({
+      nPlayers: 2,
+      hook: webhookUrl
+    });
     const gameKeys: GameKey[] = response.gameKeys;
     const viewingKey: string = response.viewingKey;
     const gameId: GameId = gameKeys[0].gameId;
 
     this.gameRegistry.register(gameId, 'tournament');
-    this.log.debug({ gameId, tournamentId, stage }, 'Game registered in registry');
+    this.log.debug({ gameId, viewingKey, tournamentId, stage }, 'Game registered in registry');
 
     const game: TournamentGame = {
       id: gameId,
@@ -368,7 +374,8 @@ export class TournamentManager {
         this.log.info({ tournamentId, winner: finalWinner }, 'Tournament complete - saving to database');
         await this.saveTournament(tournamentId);
         this.log.info({ tournamentId }, 'Tournament saved - scheduling cleanup in 5 minutes');
-        setTimeout(() => this.cleanupTournament(tournamentId), 5 * 60 * 1000); // delay cleanup 5 mins for polling delay etc
+        const timeoutId = setTimeout(() => this.cleanupTournament(tournamentId), 5 * 60 * 1000);
+        this.cleanupTimeouts.set(tournamentId, timeoutId);
         break;
       }
     }
@@ -435,7 +442,65 @@ export class TournamentManager {
     });
 
     this.tournaments.delete(tournamentId!);
+    this.cleanupTimeouts.delete(tournamentId!);
     this.log.info({ tournamentId }, 'Tournament cleaned from memory & registry');
+  }
+
+  /**
+   * Cancel all pending tournament cleanup timeouts
+   * Called during server shutdown to prevent timeouts from keeping process alive
+   */
+  cancelAllCleanupTimeouts(): void {
+    this.log.info({ count: this.cleanupTimeouts.size }, 'Cancelling all tournament cleanup timeouts');
+
+    for (const [tournamentId, timeoutId] of this.cleanupTimeouts.entries()) {
+      clearTimeout(timeoutId);
+      this.log.debug({ tournamentId }, 'Tournament cleanup timeout cancelled');
+    }
+
+    this.cleanupTimeouts.clear();
+    this.log.info('All tournament cleanup timeouts cancelled');
+  }
+
+  /**
+   * Clean up abandoned tournaments
+   * - Removes tournaments that are incomplete (pending/registration) and too old
+   * - Completed tournaments are already cleaned up via scheduled cleanup after save
+   * @param maxAgeMs - Maximum age in milliseconds for incomplete tournaments
+   * @returns Number of tournaments cleaned up
+   */
+  cleanupAbandonedTournaments(maxAgeMs: number): number {
+    const now = Date.now();
+    const staleTournaments: TournamentId[] = [];
+
+    for (const [tournamentId, tournament] of this.tournaments.entries()) {
+      const age = now - tournament.createdAt.getTime();
+      if (age > maxAgeMs && tournament.status !== 'complete') {
+        staleTournaments.push(tournamentId);
+      }
+    }
+
+    staleTournaments.forEach(tournamentId => {
+      const tournament = this.tournaments.get(tournamentId);
+      if (tournament) {
+        Object.values(tournament.games).forEach(gameId => {
+          if (gameId) {
+            this.games.delete(gameId);
+            this.gameRegistry.unregister(gameId);
+          }
+        });
+        this.tournaments.delete(tournamentId);
+      }
+    });
+
+    if (staleTournaments.length > 0) {
+      this.log.info(
+        { count: staleTournaments.length, maxAgeMs },
+        'Cleaned up abandoned tournaments'
+      );
+    }
+
+    return staleTournaments.length;
   }
 
   joinGame(gameId: GameId, playerId: UserId): GameKey {

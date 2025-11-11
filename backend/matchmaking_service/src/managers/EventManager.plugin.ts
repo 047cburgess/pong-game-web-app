@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { EventManager } from './EventManager';
+import { EventManager } from './EventManager.js';
 import type { FastifyInstance } from 'fastify';
 
 declare module 'fastify' {

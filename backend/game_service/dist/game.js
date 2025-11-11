@@ -1,5 +1,11 @@
 import assert from 'assert';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
+// @vaiva .....
+// TODO: FIX/DECIDE PLAYER CONTROLS -> 3PL MIDDLE PLAYER IS AT BOTTOM
+// TODO: FIX PLAYER CONTROLS -> REMOTE 2ND PLAYER CONTROLS IS BACK TO FRONT. 
+// --> either keep fixed board and remap controls based on side, or rotate the board for each player
+// --> local keep a fixed board for simplicity?
 const FIELD_HALFSIZE = 64_000;
 const FIELD_SIZE = 128_000; // FIELD_HALFSIZE * 2;
 assert(FIELD_HALFSIZE * 2 === FIELD_SIZE);
@@ -10,8 +16,8 @@ export const gamePropertiesSchema = z.object({
     ballSpeed: z.number().gte(16).lte(160).default(130),
     paddleSize: z.number().gte(4000).lte(60000).default(17000),
     paddleSpeed: z.number().gte(40).lte(500).default(320),
-    paddleInertia: z.number().gte(0).lte(64).default(16),
-    paddleFriction: z.number().gte(-5).lte(5).default(1.4),
+    paddleInertia: z.number().gte(0).lte(64).default(5),
+    paddleFriction: z.number().gte(-5).lte(5).default(0),
     timeLimitMs: z.int()
         .multipleOf(1000)
         .gte(15_000).lte(30 * 60_000)
@@ -54,9 +60,12 @@ export class Game {
     tickMs;
     hook;
     params;
+    viewingKey; // generated in constructor, only used in tournament games but is available
     players = new Map();
     playerSides = new Map();
+    readyPlayers = new Set();
     gameStart;
+    gameEnded = false; // track if game has already ended -> prevent multiple endGame calls
     state = {
         pauseCd: 0,
         tick: 0,
@@ -73,6 +82,7 @@ export class Game {
     constructor(id, params, hook) {
         this.id = id;
         this.params = params;
+        this.viewingKey = "view_" + randomUUID();
         this.hook = hook;
         this.tickMs = this.params.tickMs;
         this.state.pauseCd = Math.round(1000 / this.tickMs) * 3; // 3 sec worth of ticks
@@ -85,9 +95,28 @@ export class Game {
             });
         }
     }
+    // ADD A PLAYER TO THE GAME
     addPlayer(p) {
-        console.log(`Game ${this.id}, player ${p.id} connected`);
+        console.log(`Game ${this.id}, ${p.isViewer ? 'viewertoken' : 'playertoken'} ${p.id} connected (userId: ${p.userId ?? 'unregistered'})`);
+        // MAP OF PLAYER TOKEN TO PLAYER SOCKET (includes viewers)
         this.players.set(p.id, p);
+        // HANDLE VIEWER SPECIFIC
+        if (p.isViewer) {
+            this.sendTo(p, JSON.stringify({
+                type: "game_join",
+                params: this.params,
+                pid: -1,
+                isViewer: true
+            }));
+            if (this.loop) {
+                // Game already started
+                this.sendTo(p, JSON.stringify({ type: "game_start" }));
+            }
+            // Send current player list (viewer sees who's playing)
+            this.broadcastPlayerList();
+            return;
+        }
+        // Allocate the player a side if they arent already allocated - for reconnections
         if (!this.playerSides.has(p.id)) {
             this.playerSides.set(p.id, this.playerSides.size);
         }
@@ -96,27 +125,38 @@ export class Game {
             params: this.params,
             pid: this.playerSides.get(p.id),
         }));
-        if (this.playerSides.size == this.params.nPlayers) {
-            if (!this.loop) {
-                this.broadcast(JSON.stringify({
-                    type: "game_start",
-                }));
-                console.log(`Game ${this.id} started`);
-                this.gameStart = Date.now();
-                this.loop = setInterval(this.gameTick.bind(this), this.tickMs);
-            }
-            else {
-                this.sendTo(p, JSON.stringify({
-                    type: "game_start",
-                }));
-            }
+        // Broadcast updated player list to everyone (shows who's joined)
+        this.broadcastPlayerList();
+    }
+    // CHECKING IF ALL PLAYERS ARE READY -- TBD HOW TO MESSAGE RECONNECTIONS ETC
+    playerReady(pid) {
+        // check that they are connected in players socket map
+        // add to ready players
+        this.readyPlayers.add(pid);
+        // broadcast the player is ready and num players ready
+        this.broadcast(JSON.stringify({
+            type: "player_ready",
+            pid: this.playerSides.get(pid),
+            totalReady: this.readyPlayers.size,
+            totalPlayers: this.params.nPlayers,
+        }));
+        // If all ready, start game
+        if (this.readyPlayers.size === this.params.nPlayers) {
+            this.startGame();
         }
-        else if (!this.loop) {
-            this.broadcast(JSON.stringify({
-                type: "game_wait",
-                joinedPlayers: this.playerSides.size,
-            }));
-        }
+    }
+    // sync the start of game once ready check is done, 3 second count down
+    startGame() {
+        if (this.loop)
+            return;
+        this.broadcast(JSON.stringify({
+            type: "game_start",
+            totalPlayers: this.params.nPlayers,
+        }));
+        this.state.pauseCd = Math.round(1000 / this.tickMs) * 3; // 3 sec countdown
+        this.gameStart = Date.now();
+        this.lastTime = Date.now();
+        this.loop = setInterval(this.gameTick.bind(this), this.tickMs);
     }
     removePlayer(pid) {
         this.players.delete(pid);
@@ -131,8 +171,6 @@ export class Game {
     }
     gameTick() {
         const lt = Date.now();
-        this.state.time += lt - this.lastTime;
-        this.lastTime = lt;
         if (this.state.pauseCd) {
             this.state.pauseCd--;
             if (this.state.pauseCd === 0) {
@@ -140,23 +178,47 @@ export class Game {
             }
         }
         else {
+            // Only increment time after countdown finishes
+            this.state.time += lt - this.lastTime;
             this.state.tick++;
             Array.from(this.players.keys()).forEach((pid) => {
-                this.applyInput(pid, this.inputBuffers.get(pid));
-                this.inputBuffers.set(pid, []);
+                const player = this.players.get(pid);
+                if (!player?.isViewer) {
+                    this.applyInput(pid, this.inputBuffers.get(pid));
+                    this.inputBuffers.set(pid, []);
+                }
             });
             this.updateBall();
         }
+        this.lastTime = lt;
         const update = { type: 'state', state: this.state, pid: -1 };
         Array.from(this.players.values()).forEach((p) => {
-            assert(typeof this.playerSides.get(p.id) === 'number');
-            update.pid = this.playerSides.get(p.id);
-            this.sendTo(p, JSON.stringify(update));
+            if (p.isViewer) {
+                this.sendTo(p, JSON.stringify({ type: 'state', state: this.state, pid: -1 }));
+            }
+            else {
+                assert(typeof this.playerSides.get(p.id) === 'number');
+                update.pid = this.playerSides.get(p.id);
+                this.sendTo(p, JSON.stringify(update));
+            }
         });
         this.checkGameEnd();
     }
     broadcast(msg) {
         Array.from(this.players.values()).forEach((p) => { this.sendTo(p, msg); });
+    }
+    broadcastPlayerList() {
+        const playerList = Array.from(this.playerSides.entries()).map(([playerId, side]) => {
+            const player = this.players.get(playerId);
+            return {
+                pid: side,
+                userId: player?.userId ?? null,
+            };
+        });
+        this.broadcast(JSON.stringify({
+            type: "player_list",
+            players: playerList,
+        }));
     }
     sendTo(p, msg) {
         if (p.ws.readyState !== p.ws.OPEN) {
@@ -164,7 +226,10 @@ export class Game {
             return;
         }
         try {
-            assert(typeof this.playerSides.get(p.id) === 'number');
+            // Only assert playerSides for actual players, not viewers
+            if (!p.isViewer) {
+                assert(typeof this.playerSides.get(p.id) === 'number');
+            }
             p.ws.send(msg, (err) => {
                 if (err) {
                     p.ws.terminate();
@@ -287,12 +352,104 @@ export class Game {
             this.endGame();
         }
     }
-    endGame() {
+    async endGame() {
+        // Prevent multiple calls to endGame
+        if (this.gameEnded) {
+            return;
+        }
+        this.gameEnded = true;
         console.log(`Game ${this.id} ended`);
-        this.loop?.close();
-        // TODO(vaiva): end game
-        // TODO(vaiva): send game results to the hook
-        // TODO(vaiva): send game results to the players
+        if (this.loop) {
+            clearInterval(this.loop);
+            this.loop = undefined;
+        }
+        assert(this.gameStart);
+        const duration = this.state.time;
+        const durationSeconds = Math.floor(duration / 1000);
+        const minutes = Math.floor(durationSeconds / 60);
+        const seconds = durationSeconds % 60;
+        const durationStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        // find winnerr (highest score, or null for draw)
+        let winnerId = null;
+        let maxScore = -Infinity;
+        let tieCount = 0;
+        // build players array with userisds and scores
+        const players = [];
+        Array.from(this.playerSides.entries()).forEach(([playerId, side]) => {
+            const playerSocket = this.players.get(playerId);
+            const playerState = this.state.players[side];
+            if (playerSocket && playerState) {
+                const userId = playerSocket.userId;
+                // Include all players in results (userId can be undefined for local games)
+                if (userId !== undefined) {
+                    players.push({
+                        id: userId,
+                        score: playerState.score
+                    });
+                    // Determine winner
+                    if (playerState.score > maxScore) {
+                        maxScore = playerState.score;
+                        winnerId = userId;
+                        tieCount = 1;
+                    }
+                    else if (playerState.score === maxScore) {
+                        tieCount++;
+                    }
+                }
+            }
+        });
+        // If tie, set winnerId to null (for non-tournament games)
+        if (tieCount > 1) {
+            winnerId = null;
+        }
+        // Send game_end message to all players
+        this.broadcast(JSON.stringify({
+            type: "game_end",
+            winnerId,
+            players,
+            duration: durationStr,
+        }));
+        console.log(`Game ${this.id} finished. Winner: ${winnerId ?? 'draw'}, Duration: ${durationStr}`);
+        // Send webhook ONLY for remote games (matchmaking-created games with registered players)
+        if (this.hook && players.length > 0) {
+            const webhookPayload = {
+                id: this.id,
+                players,
+                winnerId,
+                date: new Date(this.gameStart),
+                duration: durationStr,
+            };
+            try {
+                const response = await fetch(this.hook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(webhookPayload),
+                });
+                if (!response.ok) {
+                    console.error(`Failed to send webhook to ${this.hook}: ${response.status} ${response.statusText}`);
+                }
+                else {
+                    console.log(`Game ${this.id} results sent to matchmaking webhook`);
+                }
+            }
+            catch (error) {
+                console.error(`Error sending webhook for game ${this.id}:`, error);
+            }
+        }
+        else if (!this.hook) {
+            console.log(`Game ${this.id} is local game - no webhook provided, results sent to frontend only`);
+        }
+        // Close all player connections after a short delay (let them receive game_end first)
+        setTimeout(() => {
+            Array.from(this.players.values()).forEach((p) => {
+                try {
+                    p.ws.close(1000, 'Game ended');
+                }
+                catch (err) {
+                    console.error('Error closing player websocket:', err);
+                }
+            });
+        }, 1000);
     }
 }
 //# sourceMappingURL=game.js.map

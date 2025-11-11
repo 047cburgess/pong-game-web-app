@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { TournamentManager } from './TournamentManager';
+import { TournamentManager } from './TournamentManager.js';
 import type { FastifyInstance } from 'fastify';
 
 declare module 'fastify' {

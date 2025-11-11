@@ -1,6 +1,8 @@
+// TODO: Check how reconnections are managed -> and checking that doesn't allow connection more than once for same user. or should it allow it?
+// TODO: Potentially store the notifications if they haven't been delivered to retry?
 import type { FastifyReply } from 'fastify';
 import type { FastifyBaseLogger } from 'fastify';
-import { UserId, GameId, TournamentId, GameInviteEvent, TournamentInviteEvent } from '../types';
+import { UserId, GameId, TournamentId, GameInviteEvent, TournamentInviteEvent } from '../types.js';
 
 export interface InviteResponseEvent {
   event: 'InviteAccepted' | 'InviteDeclined';
@@ -24,10 +26,12 @@ export class EventManager {
 
   private log: FastifyBaseLogger;
   private connections: Map<UserId, FastifyReply>;
+  private heartbeats: Map<UserId, NodeJS.Timeout>;
 
   constructor(log: FastifyBaseLogger) {
 	  this.log = log;
 	  this.connections = new Map<UserId, FastifyReply>();
+	  this.heartbeats = new Map<UserId, NodeJS.Timeout>();
   }
 
   /**
@@ -41,10 +45,26 @@ export class EventManager {
   }
 
   /**
+   * Register a heartbeat interval for a user's SSE connection
+   * @param userId - The user ID
+   * @param intervalId - The interval ID from setInterval
+   */
+  addHeartbeat(userId: UserId, intervalId: NodeJS.Timeout) {
+    this.heartbeats.set(userId, intervalId);
+  }
+
+  /**
    * Remove SSE connection when user disconnects
    * @param userId - The user ID disconnecting
    */
   removeConnection(userId: UserId) {
+    // Clear heartbeat interval if exists
+    const heartbeat = this.heartbeats.get(userId);
+    if (heartbeat) {
+      clearInterval(heartbeat);
+      this.heartbeats.delete(userId);
+    }
+
     this.connections.delete(userId);
     this.log.debug(`Event Manager: User ${userId} disconnected.`);
   }
@@ -87,5 +107,33 @@ export class EventManager {
     });
 
     return deliveredTo;
+  }
+
+  /**
+   * Close all SSE connections gracefully
+   * Called during server shutdown to clean up all active connections and heartbeat intervals
+   */
+  closeAllConnections(): void {
+    this.log.info({ count: this.connections.size }, 'Closing all SSE connections');
+
+    // Clear all heartbeat intervals
+    for (const [userId, heartbeat] of this.heartbeats.entries()) {
+      clearInterval(heartbeat);
+      this.log.debug({ userId }, 'Heartbeat interval cleared');
+    }
+    this.heartbeats.clear();
+
+    // Close all SSE connections
+    for (const [userId, connection] of this.connections.entries()) {
+      try {
+        connection.raw.end();
+        this.log.debug({ userId }, 'SSE connection closed');
+      } catch (err) {
+        this.log.error({ userId, err }, 'Error closing SSE connection');
+      }
+    }
+    this.connections.clear();
+
+    this.log.info('All SSE connections closed');
   }
 }

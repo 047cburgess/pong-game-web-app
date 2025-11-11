@@ -1,8 +1,8 @@
-import { GameServiceClient } from '../clients/game-service.client';
-import { EventManager, InviteResponseEvent } from './EventManager';
-import { GameRegistry } from './GameRegistry';
-import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from '../utils/errors';
-import { GameKey, NewGameRequest, UserId, GameId, GameStatus, GameInviteEvent, GameResultWebhook, GameResultDB, GameParticipationDB } from '../types';
+import { GameServiceClient } from '../clients/game-service.client.js';
+import { EventManager, InviteResponseEvent } from './EventManager.js';
+import { GameRegistry } from './GameRegistry.js';
+import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from '../utils/errors.js';
+import { GameKey, NewGameRequest, UserId, GameId, GameStatus, GameInviteEvent, GameResultWebhook, GameResultDB, GameParticipationDB } from '../types.js';
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 
 export interface CustomGame {
@@ -62,8 +62,12 @@ export class CustomGameManager {
 
 		if (playersToInvite.length < capacity - 1)
 			throw new BadRequestError('Number of players is less than the room size');
-		const request: NewGameRequest = {
-			nPlayers: capacity
+
+		const webhookUrl = `${process.env.SERVICE_URL}/webhooks/games/GAME_ID/result`;
+
+		const request: NewGameRequest & { hook?: string } = {
+			nPlayers: capacity,
+			hook: webhookUrl  // Will be replaced with actual gameId by game service
 		};
 		const response = await this.gameClient.createGame(request);
 		const gameKeys: GameKey[] = response.gameKeys;
@@ -204,7 +208,7 @@ export class CustomGameManager {
 			duration: gameResult.duration,
 		};
 
-	
+
 		const participations: GameParticipationDB[] = gameResult.players.map(player => {
 			let gresult: 'win' | 'loss' | 'draw';
 
@@ -216,8 +220,8 @@ export class CustomGameManager {
 			}
 			else {
 				gresult = 'loss';
-			} 
-			
+			}
+
 			return {
 				userId: player.id,
 				score: player.score,
@@ -232,5 +236,38 @@ export class CustomGameManager {
 
 		this.games.delete(gameResult.id);
 		this.log.info({ gameId: gameResult.id }, 'Custom game completed and cleaned up');
+	}
+
+	/**
+	 * Clean up abandoned custom games older than the specified age
+	 * Games that are pending or ready but never completed will be removed
+	 * Completed games are cleaned up via the webhook handler
+	 * @param maxAgeMs - Maximum age in milliseconds before cleanup
+	 * @returns Number of games cleaned up
+	 */
+	cleanupAbandonedGames(maxAgeMs: number): number {
+		const now = Date.now();
+		const staleGames: GameId[] = [];
+
+		for (const [gameId, game] of this.games.entries()) {
+			const age = now - game.createdAt.getTime();
+			if (age > maxAgeMs && (game.status === 'pending' || game.status === 'ready')) {
+				staleGames.push(gameId);
+			}
+		}
+
+		staleGames.forEach(gameId => {
+			this.games.delete(gameId);
+			this.gameRegistry.unregister(gameId);
+		});
+
+		if (staleGames.length > 0) {
+			this.log.info(
+				{ count: staleGames.length, maxAgeMs },
+				'Cleaned up abandoned custom games'
+			);
+		}
+
+		return staleGames.length;
 	}
 }
