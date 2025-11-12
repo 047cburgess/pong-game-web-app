@@ -1,3 +1,13 @@
+// TODO: Implement mechanism to handle abandonments/non joined tournaments and games. Most critical for tournaments which has progression
+// 	Custom game: if not everyone joined and marked as ready, mark game as cancelled (game service send to inform matchmaking?)
+// TOURNAMENT GAME: token expired and game hasn't started. Force winner to the person who connected
+// TOURNAMENT GAME: token expired and no one joined -> pick random winner
+// GAME: token expired and no one connected -> remove the game -> matchmaking has its own clean up mechanism
+
+
+
+
+
 import { randomUUID } from 'crypto';
 import Fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
@@ -41,6 +51,8 @@ function createToken(playerId: PlayerId, gameId: GameId, ttlMs = 5 * 60_000) {
   });
   return t;
 }
+
+// Validates token and deletes it from the token map if it's expired
 function validateToken(t: string) {
   const s = tokenMap.get(t);
   if (!s) {
@@ -128,7 +140,6 @@ fastify.register(websocketPlugin);
       return resp.status(500).send({ error: 'Server error' });
     }
 
-    // TODO: NEED TO AMEND SOME HOW TO FORCE A GAME RESULT FOR TOURNAMENT -> maybe just make the next goal the winner
     const gameId = randomUUID();
     const hookUrl = (req.body as any)?.hook?.replace('GAME_ID', gameId);
     gameParams.isTournament = true; // ADDED
@@ -242,7 +253,7 @@ const shutdown = async () => {
       clearInterval(game.loop);
       game.loop = undefined;
     }
-    // clean shut of sockets - to add for viewers when done
+    // clean shut of sockets
     for (const player of game.players.values()) {
 	    player.ws.close(1001, 'Game Server shutting down');
     }

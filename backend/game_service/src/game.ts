@@ -1,14 +1,9 @@
+// TODO: setTimeout to check from joining game to all players marked as ready.  -> if !this->loop at token expiry
+// TODO: add a pause when there's low bandwidth from a player to allow to catch up?
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 import type { WebSocket as WS } from "@fastify/websocket";
 import { z } from 'zod';
-
-
-// @vaiva .....
-// TODO: FIX/DECIDE PLAYER CONTROLS -> 3PL MIDDLE PLAYER IS AT BOTTOM
-// TODO: FIX PLAYER CONTROLS -> REMOTE 2ND PLAYER CONTROLS IS BACK TO FRONT. 
-// --> either keep fixed board and remap controls based on side, or rotate the board for each player
-// --> local keep a fixed board for simplicity?
 
 const FIELD_HALFSIZE = 64_000;
 const FIELD_SIZE = 128_000; // FIELD_HALFSIZE * 2;
@@ -109,7 +104,7 @@ export class Game {
   readonly id: GameId;
   readonly tickMs;
   readonly hook?: string;
-  readonly params: GameProperties;
+  readonly params: GameProperties; // is tournament is in here
   readonly viewingKey: string; // generated in constructor, only used in tournament games but is available
   players = new Map<PlayerId, PlayerSocket>();
   playerSides = new Map<PlayerId, number>();
@@ -406,7 +401,6 @@ export class Game {
     state.pos = npos;
   }
 
-  // TODO: if game ended but this.params.isTournament === true, need to force a winner
   checkGameEnd() {
     let out = 0;
     let bestScore = 0;

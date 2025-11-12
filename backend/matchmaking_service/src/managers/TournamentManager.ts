@@ -1,3 +1,5 @@
+// TODO: Online tournaments -> Handling in conjunciton with the game service, abandoned tournaments etc or abandoned games within tournamnets.
+// if someone doesn't join a game by token expiry, they lose the game. 
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
 import { GameServiceClient } from '../clients/game-service.client.js';
