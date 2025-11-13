@@ -129,6 +129,49 @@ paths:
         - Games
       security:
         - BearerAuth: []
+  /games/{gameId}/invite:
+    post:
+      operationId: Games_invitePlayers
+      description: Invite players to a custom game - if not included in the initial create request.
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteGameResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+        '401':
+          description: Access is unauthorized.
+        '404':
+          description: The server cannot find the requested resource.
+        '409':
+          description: The request conflicts with the current state of the server.
+      tags:
+        - Games
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invitedPlayerIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: uint64
+              required:
+                - invitedPlayerIds
+      security:
+        - BearerAuth: []
   /games/{gameId}/join:
     post:
       operationId: Games_join
@@ -1265,6 +1308,32 @@ components:
           items:
             $ref: '#/components/schemas/TournamentResult'
           maxItems: 5
+    InviteGameRequest:
+      type: object
+      required:
+        - gameId
+        - invitedPlayerIds
+      properties:
+        gameId:
+          type: string
+        invitedPlayerIds:
+          type: array
+          items:
+            type: integer
+            format: uint64
+    InviteGameResponse:
+      type: object
+      required:
+        - gameId
+        - invitedPlayers
+      properties:
+        gameId:
+          type: string
+        invitedPlayers:
+          type: array
+          items:
+            type: integer
+            format: uint64
     InviteTournamentResponse:
       type: object
       required:
@@ -1478,6 +1547,7 @@ components:
             - semi2
             - final
             - complete
+            - abandoned
         registeredPlayers:
           type: array
           items:

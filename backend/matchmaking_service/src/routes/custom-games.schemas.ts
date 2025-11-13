@@ -165,3 +165,53 @@ export const viewGameSchema = {
     }
   }
 };
+
+export const inviteGameSchema = {
+  params: {
+    type: 'object',
+    required: ['gameId'],
+    properties: {
+      gameId: { type: 'string' }
+    }
+  },
+  body: {
+    type: 'object',
+    required: ['invitedPlayerIds'],
+    properties: {
+      invitedPlayerIds: {
+        type: 'array',
+        items: { type: 'number' },
+        minItems: 1
+      }
+    }
+  },
+  response: {
+    200: {
+      type: 'object',
+      required: ['invitedPlayerIds'],
+      properties: {
+        invitedPlayerIds: {
+          type: 'array',
+          items: { type: 'number' }
+        }
+      }
+    },
+    400: {
+      type: 'object',
+      properties: { error: { type: 'string' } }
+    },
+    401: {
+      type: 'object',
+      properties: { error: { type: 'string' } }
+    },
+    404: {
+      type: 'object',
+      properties: { error: { type: 'string' } }
+    },
+    409: {
+      type: 'object',
+      properties: { error: { type: 'string' } }
+    }
+  }
+};
+

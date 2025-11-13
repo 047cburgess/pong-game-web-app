@@ -25,6 +25,10 @@ model WebhookResponse {
   message: string;
 }
 
+model TournamentGameAbandonedWebhookBody {
+	connectedPlayers?: User.Id[];
+}
+
 @tag("Matchmaking Service")
 @server("http://matchmaking-service:3000", "Matchmaking")
 namespace MatchmakingService {
@@ -35,4 +39,12 @@ namespace MatchmakingService {
     @path gameId: string,
     @body body: GameResultWebhookBody,
   ): WebhookResponse;
+
+  @route("webhooks/games/{gameId}/abandoned")
+  @doc("Game service notifies matchmaking that a tournament game was abandoned.")
+  @post
+  op gameAbandoned(
+    @path gameId: string, 
+    @body body: TournamentGameAbandonedWebhookBody,
+    ): WebhookResponse;
 }

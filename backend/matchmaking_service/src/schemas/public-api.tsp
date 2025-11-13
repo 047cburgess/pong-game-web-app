@@ -378,6 +378,17 @@ interface Games {
     },
   ): GameKey | BadRequestResponse | UnauthorizedResponse;
 
+
+  @doc("Invite players to a custom game - if not included in the initial create request.")
+  @route("{gameId}/invite")
+  @post
+  invitePlayers(
+    @path gameId: string,
+    @body body: {
+	    invitedPlayerIds: User.Id[];
+    },
+   ): InviteGameResponse | BadRequestResponse | UnauthorizedResponse | NotFoundResponse | ConflictResponse;
+
   /* Leaving the accept / decline for game invites as will be helpful for token management in the back end as tokens are limited to number of players. */
   @doc("Accept game invitation and receive token for WebSocket connection to game server.")
   @route("{gameId}/join")
@@ -421,6 +432,16 @@ model InviteTournamentResponse {
   invitedPlayers: User.Id[];
 }
 
+model InviteGameResponse {
+  gameId: GameId;
+  invitedPlayers: User.Id[];
+}
+
+model InviteGameRequest {
+   gameId: GameId;
+   invitedPlayerIds: User.Id[];
+}
+
 model TournamentGameStatus {
   id?: GameId;
   status: "pending" | "ready" | "complete";
@@ -433,7 +454,7 @@ model TournamentGameStatus {
 
 model TournamentStatusResponse {
   tournamentId: TournamentId;
-  status: "waiting" | "ready" | "semi1" | "semi2" | "final" | "complete";
+  status: "waiting" | "ready" | "semi1" | "semi2" | "final" | "complete" | "abandoned";
   registeredPlayers: User.Id[];
   games: {
     semi1: TournamentGameStatus;

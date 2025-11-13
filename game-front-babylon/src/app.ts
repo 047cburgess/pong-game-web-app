@@ -423,6 +423,16 @@ class PongApp {
         this.updatePlayerListUI();
       }
       this.engine.stopRenderLoop();
+    } else if (msg.type === "game_abandoned") {
+      console.log("Game abandoned:", msg.reason);
+      this.engine.stopRenderLoop();
+
+      const debugtext = document.getElementById("debugtext");
+      if (debugtext) {
+        debugtext.textContent = "⚠️ Game Abandoned: " + msg.reason;
+        debugtext.style.color = "#ff9800";
+      }
+
     } else {
       console.log("[WARN]: Unknown msg", msg);
     }

@@ -1,20 +1,10 @@
-// TODO: Implement mechanism to handle abandonments/non joined tournaments and games. Most critical for tournaments which has progression
-// 	Custom game: if not everyone joined and marked as ready, mark game as cancelled (game service send to inform matchmaking?)
-// TOURNAMENT GAME: token expired and game hasn't started. Force winner to the person who connected
-// TOURNAMENT GAME: token expired and no one joined -> pick random winner
-// GAME: token expired and no one connected -> remove the game -> matchmaking has its own clean up mechanism
-
-
-
-
-
 import { randomUUID } from 'crypto';
 import Fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
 import cors from '@fastify/cors';
 import { z } from 'zod';
 import { Game, gamePropertiesSchema, } from './game.js';
-import type { GameId, PlayerId, PlayerSocket, PlayerInput, GameProperties } from './game.js';
+import type { GameId, PlayerId, PlayerSocket, PlayerInput, GameProperties, UserId } from './game.js';
 import { config } from './config.js';
 
 const envToLogger = {
@@ -35,6 +25,9 @@ const envToLogger = {
   test: false
 };
 
+const TOKEN_TTL_MS = 5 * 60_000; // 5 minutes
+const ABANDONMENT_GRACE_PERIOD_MS = 2 * 60_000; // 2 minutes
+
 const games = new Map<GameId, Game>();
 const tokenMap = new Map<string, {
   playerId: PlayerId;
@@ -42,12 +35,12 @@ const tokenMap = new Map<string, {
   expires: number;
 }>();
 
-function createToken(playerId: PlayerId, gameId: GameId, ttlMs = 5 * 60_000) {
+function createToken(playerId: PlayerId, gameId: GameId, expires: number) {
   const t = randomUUID();
   tokenMap.set(t, {
     playerId,
     gameId,
-    expires: Date.now() + ttlMs
+    expires
   });
   return t;
 }
@@ -77,7 +70,7 @@ await fastify.register(cors, {
 
 fastify.register(websocketPlugin);
 
-// ROUTE 
+// ROUTE
 // FOR CLASSIC GAME (MATCHMAKING 2PL OR 2-4PL CUSTOM)
 // ROUTE FOR CLASSIC GAME (MATCHMAKING 2PL OR 2-4PL CUSTOM)
   fastify.post('/internal/games/classic/create', async (req, resp) => {
@@ -102,12 +95,20 @@ fastify.register(websocketPlugin);
     const gameId = randomUUID();
     const hookUrl = (req.body as any)?.hook?.replace('GAME_ID', gameId);
     const game = new Game(gameId, gameParams, hookUrl);
+    const tokenExpiry = Date.now() + TOKEN_TTL_MS;
+
+    game.tokenExpiry = tokenExpiry;
+    game.abandonmentTimeout = setTimeout(
+      () => handleAbandonment(game),
+      TOKEN_TTL_MS + ABANDONMENT_GRACE_PERIOD_MS
+    );
+
     games.set(gameId, game);
 
     // BUILD THE RESPONSE GAME KEYS
     const gameKeys = Array.from({ length: gameParams.nPlayers }).map(() => {
       const playerId = randomUUID();
-      const key = createToken(playerId, gameId);
+      const key = createToken(playerId, gameId, tokenExpiry);
       const tokenData = tokenMap.get(key)!;
 
       return {
@@ -145,12 +146,20 @@ fastify.register(websocketPlugin);
     gameParams.isTournament = true; // ADDED
     fastify.log.debug(`GameParams.isTournament = ${gameParams.isTournament}`);
     const game = new Game(gameId, gameParams, hookUrl);
+    const tokenExpiry = Date.now() + TOKEN_TTL_MS;
+
+    game.tokenExpiry = tokenExpiry;
+    game.abandonmentTimeout = setTimeout(
+      () => handleAbandonment(game),
+      TOKEN_TTL_MS + ABANDONMENT_GRACE_PERIOD_MS
+    );
+
     games.set(gameId, game);
 
     // BUILD THE RESPONSE GAME KEYS
     const gameKeys = Array.from({ length: gameParams.nPlayers }).map(() => {
       const playerId = randomUUID();
-      const key = createToken(playerId, gameId);
+      const key = createToken(playerId, gameId, tokenExpiry);
       const tokenData = tokenMap.get(key)!;
       return {
         key,
@@ -161,6 +170,93 @@ fastify.register(websocketPlugin);
 
     return { viewingKey: game.viewingKey, gameKeys };
   });
+
+
+
+async function handleAbandonment(game: Game) {
+  // If game already started or ended, nothing to do
+  if (game.loop || game.gameEnded) {
+    fastify.log.debug({ gameId: game.id }, 'Game already started/ended, skipping abandonment check');
+    return;
+  }
+
+  // The game should have started by now
+  const connectedUserIds = Array.from(game.playerSides.keys())
+    .map(pid => game.players.get(pid)?.userId)
+    .filter(uid => uid !== undefined) as UserId[];
+
+  fastify.log.info({
+    gameId: game.id,
+    isTournament: game.params.isTournament,
+    connectedCount: connectedUserIds.length
+  }, 'Game abandoned - players did not ready in time');
+
+  // Notify connected players (and viewers!)
+  notifyPlayersGameAbandoned(game);
+
+  // Post abandonment report to matchmaking for tournament games only
+  if (game.hook && game.params.isTournament) {
+    await postAbandonmentReport(game, connectedUserIds);
+  }
+
+  cleanupGame(game);
+  games.delete(game.id);
+}
+
+function notifyPlayersGameAbandoned(game: Game) {
+  const message = JSON.stringify({
+    type: 'game_abandoned',
+    reason: 'Players did not ready in time'
+  });
+
+  game.broadcast(message);
+  fastify.log.debug({ gameId: game.id }, 'Abandonment notification sent to connected players');
+}
+
+async function postAbandonmentReport(game: Game, connectedUserIds: UserId[]) {
+  // Replace /result with /abandoned in the hook URL
+  const abandonedHook = game.hook!.replace('/result', '/abandoned');
+
+  const webhookPayload = {
+    connectedPlayers: connectedUserIds,
+    date: new Date().toISOString()
+  };
+
+  try {
+    const response = await fetch(abandonedHook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(webhookPayload),
+    });
+
+    if (!response.ok) {
+      fastify.log.error({ gameId: game.id, status: response.status }, 'Failed to post abandonment report');
+    } else {
+      fastify.log.info({ gameId: game.id, connectedCount: connectedUserIds.length }, 'Abandonment report posted to matchmaking');
+    }
+  } catch (error) {
+    fastify.log.error({ gameId: game.id, error }, 'Error posting abandonment report');
+  }
+
+  game.gameEnded = true;
+}
+
+function cleanupGame(game: Game) {
+  if (game.abandonmentTimeout) {
+    clearTimeout(game.abandonmentTimeout);
+    game.abandonmentTimeout = undefined;
+  }
+
+  for (const player of game.players.values()) {
+    try {
+      player.ws.close(1000, 'Game abandoned');
+    } catch (err) {
+      fastify.log.error({ error: err }, 'Error closing player websocket');
+    }
+  }
+
+  fastify.log.debug({ gameId: game.id }, 'Game cleaned up');
+}
 
 
 // ROUTE FOR PLAYERS TO CONNECT TO PLAY && SPECTATORS TO SPECTATE

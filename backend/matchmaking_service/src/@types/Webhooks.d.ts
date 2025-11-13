@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/webhooks/games/{gameId}/abandoned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Game service notifies matchmaking that a tournament game was abandoned. */
+        post: operations["MatchmakingService_gameAbandoned"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/games/{gameId}/result": {
         parameters: {
             query?: never;
@@ -42,6 +59,9 @@ export interface components {
             /** Format: duration */
             duration: string;
         };
+        TournamentGameAbandonedWebhookBody: {
+            connectedPlayers?: number[];
+        };
         WebhookResponse: {
             message: string;
         };
@@ -54,6 +74,32 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    MatchmakingService_gameAbandoned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TournamentGameAbandonedWebhookBody"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookResponse"];
+                };
+            };
+        };
+    };
     MatchmakingService_gameComplete: {
         parameters: {
             query?: never;

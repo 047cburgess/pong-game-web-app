@@ -13,6 +13,13 @@ export type TournamentInviteEvent = PublicAPIComponents['schemas']['TournamentIn
 export type NewTournamentResponse = PublicAPIComponents['schemas']['CreateTournamentResponse'];
 export type InviteToTournamentResponse = PublicAPIComponents['schemas']['InviteTournamentResponse'];
 export type JoinTournamentResponse = PublicAPIComponents['schemas']['JoinTournamentResponse'];
+export type InviteToGameResponse = PublicAPIComponents['schemas']['InviteGameResponse'];
+
+// Request body types (inline in schema, not named)
+export type InviteToGameRequest = {
+	gameId: string;
+	invitedPlayerIds: UserId[];
+};
 
 
 // Internal API types (game service communication)
@@ -84,6 +91,8 @@ export interface GameResultWebhook {
 	winnerId?: UserId | null;
 	date: Date;
 	duration: string;
+	abandoned?: boolean; // True if game was abandoned (players didn't show/ready)
+	connectedPlayers?: UserId[]; // List of players who connected (for abandoned games)
 }
 
 // for database storage
@@ -134,7 +143,7 @@ export interface JoinTournamentRequest {
 	// No body fields - tournamentId comes from URL params
 }
 
-export type TournamentStatus = 'waiting' | 'ready' | 'semi1' | 'semi2' | 'final' | 'complete';
+export type TournamentStatus = 'waiting' | 'ready' | 'semi1' | 'semi2' | 'final' | 'complete' | 'abandoned';
 export type TournamentGameStage = 'semi1' | 'semi2' | 'final';
 
 export interface Tournament {
@@ -163,6 +172,7 @@ export interface TournamentGame {
 	createdAt: Date;
 	winner?: UserId;
 	gameResult?: GameResultWebhook;
+	forced?: boolean; // True if result was forced due to abandonment
 }
 
 

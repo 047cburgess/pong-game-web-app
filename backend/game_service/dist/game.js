@@ -1,11 +1,7 @@
+// TODO: add a pause when there's low bandwidth from a player to allow to catch up?
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
-// @vaiva .....
-// TODO: FIX/DECIDE PLAYER CONTROLS -> 3PL MIDDLE PLAYER IS AT BOTTOM
-// TODO: FIX PLAYER CONTROLS -> REMOTE 2ND PLAYER CONTROLS IS BACK TO FRONT. 
-// --> either keep fixed board and remap controls based on side, or rotate the board for each player
-// --> local keep a fixed board for simplicity?
 const FIELD_HALFSIZE = 64_000;
 const FIELD_SIZE = 128_000; // FIELD_HALFSIZE * 2;
 assert(FIELD_HALFSIZE * 2 === FIELD_SIZE);
@@ -17,12 +13,12 @@ export const gamePropertiesSchema = z.object({
     ballSpeed: z.number().gte(16).lte(160).default(130),
     paddleSize: z.number().gte(4000).lte(60000).default(17000),
     paddleSpeed: z.number().gte(40).lte(500).default(320),
-    paddleInertia: z.number().gte(0).lte(64).default(5),
-    paddleFriction: z.number().gte(-5).lte(5).default(0),
+    paddleInertia: z.number().gte(0).lte(64).default(16),
+    paddleFriction: z.number().gte(-5).lte(5).default(1.4),
     timeLimitMs: z.int()
         .multipleOf(1000)
         .gte(15_000).lte(30 * 60_000)
-        .default(0.25 * 60_000),
+        .default(2 * 60_000),
     startingHealth: z.int().positive().optional(),
     pointsTarget: z.int().positive().optional().default(7),
     fieldSize: z.literal(FIELD_SIZE).default(FIELD_SIZE),
@@ -60,13 +56,15 @@ export class Game {
     id;
     tickMs;
     hook;
-    params;
+    params; // is tournament is in here
     viewingKey; // generated in constructor, only used in tournament games but is available
     players = new Map();
     playerSides = new Map();
     readyPlayers = new Set();
     gameStart;
     gameEnded = false; // track if game has already ended -> prevent multiple endGame calls
+    abandonmentTimeout; // timeout for checking abandonment
+    tokenExpiry; // when tokens expire
     state = {
         pauseCd: 0,
         tick: 0,
@@ -334,7 +332,6 @@ export class Game {
         }
         state.pos = npos;
     }
-    // TODO: if game ended but this.params.isTournament === true, need to force a winner
     checkGameEnd() {
         let out = 0;
         let bestScore = 0;
@@ -431,7 +428,7 @@ export class Game {
         }));
         console.log(`Game ${this.id} finished. Winner: ${winnerId ?? 'draw'}, Duration: ${durationStr}`);
         // Send webhook ONLY for remote games (matchmaking-created games with registered players)
-        if (this.hook && players.length > 0) {
+        if (this.hook) {
             const webhookPayload = {
                 id: this.id,
                 players,

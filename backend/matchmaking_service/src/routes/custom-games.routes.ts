@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { createCustomGameSchema, joinGameSchema, declineGameSchema, viewGameSchema } from './custom-games.schemas.js';
+import { createCustomGameSchema, joinGameSchema, declineGameSchema, viewGameSchema, inviteGameSchema } from './custom-games.schemas.js';
 import { UnauthorizedError, NotFoundError } from '../utils/errors.js';
-import { UserId } from '../types.js';
+import { UserId, InviteToGameRequest } from '../types.js';
 // TODO: Authentication -> should be a prehandler rather than being mixed in. Here temp.
 
  	export default async function customGamesRoutes(fastify: FastifyInstance) {
@@ -23,6 +23,19 @@ import { UserId } from '../types.js';
 			numberOfPlayers
 		);
 		return hostKey;
+	});
+	
+	// POST /games/{gameId}/invite - Invite additional players to game
+	fastify.post<{ Params: { gameId: string }; Body: InviteToGameRequest }>('/games/:gameId/invite', {
+		schema: inviteGameSchema
+	}, async (request) => {
+		const hostId = Number(request.headers['x-user-id']);
+		if (!hostId)
+			throw new UnauthorizedError();
+
+		const { gameId, invitedPlayerIds } = request.body;
+		const response = fastify.customGameManager.invitePlayers(gameId, hostId, invitedPlayerIds);
+		return response;
 	});
 
 	// POST /games/{gameId}/join - Join game (custom or tournament)

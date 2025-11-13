@@ -300,7 +300,11 @@ export class TournamentManager {
   * @param gameResult - The game result raw data from the webhook
   */
   handleGameComplete(gameResult: GameResultWebhook): void {
-    this.log.info({ gameId: gameResult.id, winnerId: gameResult.winnerId }, 'Received game completion webhook');
+    this.log.info({
+      gameId: gameResult.id,
+      winnerId: gameResult.winnerId
+    }, 'Received game completion webhook');
+
     const game = this.games.get(gameResult.id);
     if (!game) return this.log.warn({ gameId: gameResult.id }, 'Unknown tournament game');
     if (game.status === 'complete') {
@@ -308,9 +312,10 @@ export class TournamentManager {
       return;
     }
 
-    // Update game state
+    // Handle normal game completion
     game.status = 'complete';
     game.winner = gameResult.winnerId ?? undefined;
+    game.forced = false;
     if (game.players) {
       game.players[0].score = gameResult.players[0].score;
       game.players[1].score = gameResult.players[1].score;
@@ -321,6 +326,79 @@ export class TournamentManager {
     this.log.info({ gameId: gameResult.id, tournamentId: game.tournamentId, stage: game.stage, winner: game.winner }, 'Tournament game completed - advancing tournament');
 
     // trigger next stage of tournament
+    this.advanceTournament(game.tournamentId);
+  }
+
+  /**
+   * Handle abandoned tournament game - decide winner based on matchmaking logic
+   * @param gameId - The game ID
+   * @param connectedPlayers - Array of user IDs who connected
+   * @param date - ISO date string when abandonment occurred
+   */
+  public handleGameAbandonment(gameId: GameId, connectedPlayers: UserId[], date: string): void {
+    const game = this.games.get(gameId);
+    if (!game) {
+      this.log.warn({ gameId }, 'Game not found for abandonment handling');
+      return;
+    }
+
+    this.log.debug({
+      gameId: game.id,
+      tournamentId: game.tournamentId,
+      stage: game.stage,
+      connectedCount: connectedPlayers.length
+    }, 'Handling abandoned tournament game');
+
+    const expectedPlayers = game.players?.map(p => p.id) || [];
+    let winnerId: UserId | undefined;
+
+    if (connectedPlayers.length === 1) {
+      // One player connected - forfeit win
+      winnerId = connectedPlayers[0];
+      this.log.info({ gameId: game.id, winnerId }, 'Forfeit win - one player connected');
+    } else {
+      // 0 or 2 connected - pick random from appropriate pool
+      const pool = connectedPlayers.length === 0 ? expectedPlayers : connectedPlayers;
+      winnerId = pool[Math.floor(Math.random() * pool.length)];
+      this.log.info({ gameId: game.id, winnerId, connectedCount: connectedPlayers.length }, 'Random winner selected');
+    }
+
+    // Update game state - winner gets 1 point, loser gets 0
+    game.status = 'complete';
+    game.winner = winnerId;
+    game.forced = true;
+
+    // Create synthetic game result for database with winner having 1 point
+    const player1 = expectedPlayers[0];
+    const player2 = expectedPlayers[1];
+
+    game.gameResult = {
+      id: game.id,
+      players: [
+        { id: player1, score: player1 === winnerId ? 1 : 0 },
+        { id: player2, score: player2 === winnerId ? 1 : 0 }
+      ],
+      winnerId,
+      date: new Date(date),
+      duration: '00:00',
+      abandoned: true,
+      connectedPlayers
+    };
+
+    if (game.players) {
+      game.players[0].score = game.players[0].id === winnerId ? 1 : 0;
+      game.players[1].score = game.players[1].id === winnerId ? 1 : 0;
+    }
+
+    this.log.info({
+      gameId: game.id,
+      tournamentId: game.tournamentId,
+      stage: game.stage,
+      winner: game.winner,
+      forced: true
+    }, 'Abandoned game resolved - advancing tournament');
+
+    // Advance tournament
     this.advanceTournament(game.tournamentId);
   }
 
@@ -372,6 +450,22 @@ export class TournamentManager {
       case 'final': {
         const finalWinner = this.games.get(tournament.games.final!)?.winner;
         tournament.winner = finalWinner ?? undefined;
+
+        // Check if entire tournament was abandoned (all games forced)
+        const allGamesForced = this.checkIfTournamentAbandoned(tournamentId);
+
+        if (allGamesForced) {
+          this.log.warn({ tournamentId }, 'Tournament completed but all games were forced - marking as abandoned');
+          tournament.status = 'abandoned';
+
+          // Don't save to database, just clean up
+          this.log.info({ tournamentId }, 'Abandoned tournament - skipping database save, scheduling cleanup');
+          const timeoutId = setTimeout(() => this.cleanupTournament(tournamentId), 60_000); // 1 minute
+          this.cleanupTimeouts.set(tournamentId, timeoutId);
+          return;
+        }
+
+        // Normal tournament completion
         tournament.status = 'complete';
         this.log.info({ tournamentId, winner: finalWinner }, 'Tournament complete - saving to database');
         await this.saveTournament(tournamentId);
@@ -381,6 +475,35 @@ export class TournamentManager {
         break;
       }
     }
+  }
+
+  /**
+   * Check if tournament was completely abandoned (all games forced with no real participation)
+   */
+  private checkIfTournamentAbandoned(tournamentId: TournamentId): boolean {
+    const tournament = this.tournaments.get(tournamentId);
+    if (!tournament) return false;
+
+    const semi1 = tournament.games.semi1 ? this.games.get(tournament.games.semi1) : undefined;
+    const semi2 = tournament.games.semi2 ? this.games.get(tournament.games.semi2) : undefined;
+    const final = tournament.games.final ? this.games.get(tournament.games.final) : undefined;
+
+    // Check if all completed games were forced
+    const allGames = [semi1, semi2, final].filter(g => g !== undefined);
+    const completedGames = allGames.filter(g => g.status === 'complete');
+    const forcedGames = completedGames.filter(g => g.forced === true);
+
+    // If all completed games were forced (no actual gameplay), tournament is abandoned
+    const allForced = completedGames.length > 0 && completedGames.length === forcedGames.length;
+
+    this.log.debug({
+      tournamentId,
+      completedGames: completedGames.length,
+      forcedGames: forcedGames.length,
+      allForced
+    }, 'Tournament abandonment check');
+
+    return allForced;
   }
 
   async saveTournament(tournamentId: TournamentId) {

@@ -1,4 +1,3 @@
-// TODO: setTimeout to check from joining game to all players marked as ready.  -> if !this->loop at token expiry
 // TODO: add a pause when there's low bandwidth from a player to allow to catch up?
 import assert from 'assert';
 import { randomUUID } from 'crypto';
@@ -17,12 +16,12 @@ export const gamePropertiesSchema = z.object({
   ballSpeed: z.number().gte(16).lte(160).default(130),
   paddleSize: z.number().gte(4000).lte(60000).default(17000),
   paddleSpeed: z.number().gte(40).lte(500).default(320),
-  paddleInertia: z.number().gte(0).lte(64).default(5),
-  paddleFriction: z.number().gte(-5).lte(5).default(0),
+  paddleInertia: z.number().gte(0).lte(64).default(16),
+  paddleFriction: z.number().gte(-5).lte(5).default(1.4),
   timeLimitMs: z.int()
     .multipleOf(1000)
     .gte(15_000).lte(30 * 60_000)
-    .default(0.25 * 60_000),
+    .default(2 * 60_000),
   startingHealth: z.int().positive().optional(),
   pointsTarget: z.int().positive().optional().default(7),
   fieldSize: z.literal(FIELD_SIZE).default(FIELD_SIZE),
@@ -111,6 +110,8 @@ export class Game {
   readyPlayers = new Set<PlayerId>();
   gameStart?: number;
   gameEnded: boolean = false; // track if game has already ended -> prevent multiple endGame calls
+  abandonmentTimeout?: NodeJS.Timeout; // timeout for checking abandonment
+  tokenExpiry?: number; // when tokens expire
   state: GameState = {
     pauseCd: 0,
     tick: 0,
@@ -512,7 +513,7 @@ export class Game {
     console.log(`Game ${this.id} finished. Winner: ${winnerId ?? 'draw'}, Duration: ${durationStr}`);
 
     // Send webhook ONLY for remote games (matchmaking-created games with registered players)
-    if (this.hook && players.length > 0) {
+    if (this.hook) {
       const webhookPayload = {
         id: this.id,
         players,

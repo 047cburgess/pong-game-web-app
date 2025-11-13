@@ -5,6 +5,31 @@ info:
 tags:
   - name: Matchmaking Service
 paths:
+  /webhooks/games/{gameId}/abandoned:
+    post:
+      operationId: MatchmakingService_gameAbandoned
+      description: Game service notifies matchmaking that a tournament game was abandoned.
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+      tags:
+        - Matchmaking Service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentGameAbandonedWebhookBody'
   /webhooks/games/{gameId}/result:
     post:
       operationId: MatchmakingService_gameComplete
@@ -65,6 +90,14 @@ components:
         duration:
           type: string
           format: duration
+    TournamentGameAbandonedWebhookBody:
+      type: object
+      properties:
+        connectedPlayers:
+          type: array
+          items:
+            type: integer
+            format: uint64
     WebhookResponse:
       type: object
       required:

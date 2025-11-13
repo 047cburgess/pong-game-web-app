@@ -2,7 +2,7 @@ import { GameServiceClient } from '../clients/game-service.client.js';
 import { EventManager, InviteResponseEvent } from './EventManager.js';
 import { GameRegistry } from './GameRegistry.js';
 import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from '../utils/errors.js';
-import { GameKey, NewGameRequest, UserId, GameId, GameStatus, GameInviteEvent, GameResultWebhook, GameResultDB, GameParticipationDB } from '../types.js';
+import { GameKey, NewGameRequest, InviteToGameResponse, UserId, GameId, GameStatus, GameInviteEvent, GameResultWebhook, GameResultDB, GameParticipationDB } from '../types.js';
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 
 export interface CustomGame {
@@ -103,6 +103,36 @@ export class CustomGameManager {
 		// host's game key
 		return gameKeys[0];
 	}
+
+  invitePlayers(gameId: GameId, hostId: UserId, playerIds: UserId[]): InviteToGameResponse {
+    this.log.info({ gameId, hostId, playerIds }, 'Inviting players to game');
+    const game = this.getGame(gameId);
+
+    if (game.hostId !== hostId)
+      throw new ForbiddenError('Only host can invite players');
+
+    if (game.status !== 'pending')
+      throw new ConflictError('Game already started');
+
+    if (playerIds.includes(hostId))
+      throw new BadRequestError('Cannot invite yourself');
+
+    if (new Set(playerIds).size !== playerIds.length)
+      throw new BadRequestError('Duplicate invites');
+
+    // Check for players already invited or registered
+    const alreadyInvited = playerIds.filter(id => game.invitedPlayers.includes(id) || game.acceptedPlayers.includes(id));
+    if (alreadyInvited.length > 0)
+      throw new ConflictError(`Players already invited or registered: ${alreadyInvited.join(', ')}`);
+
+    const invite: GameInviteEvent = { event: 'GameInvite', gameId: gameId!, from: hostId };
+    const delivered = this.eventManager.broadcastEvent(playerIds, invite);
+
+    game.invitedPlayers.push(...delivered);
+    this.log.info({ gameId, deliveredCount: delivered.length }, 'Players invited successfully');
+
+    return { gameId: gameId!, invitedPlayers: delivered };
+  }
 
 	/**
 	 * Accept a custom game invitation

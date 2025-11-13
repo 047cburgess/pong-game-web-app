@@ -73,6 +73,8 @@ export declare class Game {
     readyPlayers: Set<string>;
     gameStart?: number;
     gameEnded: boolean;
+    abandonmentTimeout?: NodeJS.Timeout;
+    tokenExpiry?: number;
     state: GameState;
     inputBuffers: Map<string, PlayerInput[]>;
     loop?: NodeJS.Timeout;

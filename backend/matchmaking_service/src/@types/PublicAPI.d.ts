@@ -87,6 +87,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/games/{gameId}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Invite players to a custom game - if not included in the initial create request. */
+        post: operations["Games_invitePlayers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/games/{gameId}/join": {
         parameters: {
             query?: never;
@@ -658,6 +675,14 @@ export interface components {
             recentMatches: components["schemas"]["GameResult"][];
             recentTournaments: components["schemas"]["TournamentResult"][];
         };
+        InviteGameRequest: {
+            gameId: string;
+            invitedPlayerIds: number[];
+        };
+        InviteGameResponse: {
+            gameId: string;
+            invitedPlayers: number[];
+        };
         InviteTournamentResponse: {
             tournamentId: string;
             invitedPlayers: number[];
@@ -731,7 +756,7 @@ export interface components {
         TournamentStatusResponse: {
             tournamentId: string;
             /** @enum {string} */
-            status: "waiting" | "ready" | "semi1" | "semi2" | "final" | "complete";
+            status: "waiting" | "ready" | "semi1" | "semi2" | "final" | "complete" | "abandoned";
             registeredPlayers: number[];
             games: {
                 semi1: components["schemas"]["TournamentGameStatus"];
@@ -938,6 +963,62 @@ export interface operations {
             };
             /** @description The server cannot find the requested resource. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Games_invitePlayers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    invitedPlayerIds: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteGameResponse"];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Access is unauthorized. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The server cannot find the requested resource. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request conflicts with the current state of the server. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
