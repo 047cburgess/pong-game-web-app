@@ -49,8 +49,8 @@ babylon-start:
 
 build:
 	@if [ ! -f $(ENV_FILE) ]; then \
-		echo "$(YELLOW)Copying .env into repo...$(NC)"; \
-		cp $(ENV_TEMPLATE) $(ENV_FILE); \
+		echo "$(RED)Missing .env into repo...$(NC)"; \
+		exit 1; \
 	fi
 	@echo "$(YELLOW)Building services...$(NC)"
 	-$(DOCKER_COMPOSE) build $(BUILD_ARGS)
@@ -83,6 +83,7 @@ fclean: clean
 	-rm -rf backend/game_service/node_modules
 	-rm -rf backend/matchmaking_service/node_modules
 	-rm -rf game-front-babylon/node_modules
+	-rm -rf backend/auth_service/node_modules
 	@echo "$(GREEN)Full cleanup complete$(NC)"
 
 re: fclean all

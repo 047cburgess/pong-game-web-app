@@ -1,0 +1,76 @@
+AuthService:
+	Oauth authentification process
+		redirect to Auth with specific client id (Oauth app id)
+		receive answer from Auth
+		use answer to get access token
+		use access token to get user credentials:
+			github_id
+			username // idk could be used to setup in game name directly
+			email
+		check existing
+		if existing check 2FA activated
+		else generate user_id (timestamp + number)
+
+
+		register or login 
+	auth from page username/email :
+		login : 
+				email | username : string
+				password : string
+			verify if email or username exist 
+			and get data from db
+			hash received password compare hash
+			check 2FA
+		register:
+				email
+				username
+				password
+				activate 2FA : bool
+			check username validity
+			check mail is potentialy a real mail // send confirmation link perhaps?
+			password -> hash 
+			generate user_id (timestamp + number)
+		
+	generate JWT or retrieve active from db 
+		user_id
+		+issued_at
+		+expires_at
+		+signature
+		base64	
+	put in cookie and send cookie to client ?
+
+	2FA:
+		generate secret code
+		send mail to registered email with secret code inside
+		api route to receive the code probably
+		if code is valide continue auth 
+		else retry or cancel ?
+
+	API Gateway:
+		intercept api calls extract JWT from cookie
+		check JWT validity
+			unbase64
+			signature = hashed content
+			expiration_date < Date.now();
+
+		
+		if valid
+			put user_id into header
+			forward request to corresponding microservice
+		else
+			return 401 or something
+	
+
+	DbManager:
+		2 tables : 
+		users 
+			contains credentials
+		OAuth_users 
+			same but for Oauth users
+
+	OnDisconnect
+		delete the active JWT
+
+					
+
+

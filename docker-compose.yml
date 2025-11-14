@@ -10,6 +10,7 @@ services:
     networks:
       - transcendence
     environment:
+      - TZ=${TZ}
       - LISTEN_PORT=3000
       - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}
       - LOG_LEVEL=${LOG_LEVEL}
@@ -28,6 +29,7 @@ services:
     networks:
       - transcendence
     environment:
+      - TZ=${TZ}
       - PORT=${MATCHMAKING_PORT}
       - NODE_ENV=${NODE_ENV}
       - LOG_LEVEL=${LOG_LEVEL}
@@ -36,6 +38,51 @@ services:
       - GAME_SERVICE_URL=${GAME_SERVICE_URL}
       - SERVICE_URL=${MATCHMAKING_SERVICE_URL}
     command: npm run dev
+
+  user-service:
+    build: 
+      context: ./backend/user_service
+      dockerfile: Dockerfile
+    container_name: user-service
+    networks:
+      - transcendence
+    ports:
+      - "3003:3000"
+    volumes:
+      - user-service-data:/app/data
+    restart: unless-stopped
+  
+  auth-service:
+    build: 
+      context: ./backend/auth_service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    networks:
+      - transcendence
+    ports:
+      - "3002:3000"
+    volumes:
+      - auth-service-data:/app/data
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - NODE_ENV=${NODE_ENV}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DB_VERBOSE=${DB_VERBOSE}
+      - SECRET=${SECRET}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      - MATCHMAKING_SERVICE=${MATCHMAKING_SERVICE_URL}
+      - USER_SERVICE=${USER_SERVICE_URL}
+volumes:
+  user-service-data: {}
+  auth-service-data: {}
 
 networks:
   transcendence:

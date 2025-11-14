@@ -1,0 +1,8 @@
+AuthManager
+		DONE: adding the part that sends a mail after generating the code
+Oauth
+	adding the part that generates a code send the mail and throw the specific error if 2FA active
+Env:
+ setup the different variables
+
+everything needs to be tested

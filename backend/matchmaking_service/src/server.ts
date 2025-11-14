@@ -21,11 +21,11 @@ import localGamesRoutes from './routes/local-games.routes.js';
 
 const envToLogger = {
   development: {
-    level: config.LOG_LEVEL === 'info' ? 'debug' : config.LOG_LEVEL,
+    level: 'debug',
     transport: {
       target: 'pino-pretty',
       options: {
-        translateTime: 'HH:MM:ss Z',
+    	translateTime: "SYS:HH:MM:ss Z",
         ignore: 'pid,hostname',
         colorize: true
       }
@@ -42,7 +42,9 @@ const fastify = Fastify({
 });
 
 await fastify.register(cors, {
-	origin: ['*'],
+	origin: (_origin, cb) => {
+		cb(null, true);
+	},
 	credentials: true,
 	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 });

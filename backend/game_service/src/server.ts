@@ -13,7 +13,7 @@ const envToLogger = {
     transport: {
       target: 'pino-pretty',
       options: {
-        translateTime: 'HH:MM:ss Z',
+    	translateTime: "SYS:HH:MM:ss Z",
         ignore: 'pid,hostname',
         colorize: true
       }
@@ -64,9 +64,16 @@ const fastify = Fastify({
 });
 
 await fastify.register(cors, {
-	origin: true, 
-	credentials: true
+	origin: (_origin, cb) => {
+		cb(null, true);
+	},
+	credentials: true,
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 });
+//await fastify.register(cors, {
+//	origin: true, 
+//	credentials: true
+//});
 
 fastify.register(websocketPlugin);
 
