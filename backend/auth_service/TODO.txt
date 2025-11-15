@@ -1,7 +1,7 @@
 AuthManager
 		DONE: adding the part that sends a mail after generating the code
 Oauth
-	adding the part that generates a code send the mail and throw the specific error if 2FA active
+	DONE : adding the part that generates a code send the mail and throw the specific error if 2FA active
 Env:
  setup the different variables
 
@@ -13,13 +13,13 @@ ToTest:
 logout : ✔️
 login: ✔️ 
 session: ✔️
-register :  ✔️ | need to test with 2FA param and password protection is both too hard and does not recognizes enought special
+register :  ✔️ | 
 register Oauth : ✔️ , seems to work couldn't test using multiples github accounts
 login Oauth : ✔️
 
 2FA ; ✔️
 
-haven't tested every error type probably need to change the errors |
+haven't tested every error type probably need to change the errors
 returned during mail sending otherwise it will be 500
 
 ApiGateway:

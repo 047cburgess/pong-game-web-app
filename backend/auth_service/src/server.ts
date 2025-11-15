@@ -6,6 +6,8 @@ import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import path from "path";
 import dotenv from 'dotenv';
+import { JWTManager } from "./Managers/JWTManager";
+import { TwoFAManager } from "./Managers/TwoFAManager";
 
 let isInitialized = false;
 let clearIntervalHandle: NodeJS.Timeout | null = null;
@@ -46,13 +48,11 @@ export function createServer() {
 
 	server.register(fastifyStatic, {
         root: path.join(process.cwd(), "../../frontend"),
-        // Ajoutez l'option `setHeaders` pour vous assurer que les fichiers JS sont bien identifiés
         setHeaders: (res, path, stat) => {
             if (path.endsWith('.js')) {
                 res.setHeader('Content-Type', 'application/javascript');
             }
         },
-        // Assurez-vous que l'option `extensions` ou `decorateReply` n'a rien cassé
     });
 
 	server.register(fastifyCookie);
@@ -70,7 +70,7 @@ export function createServer() {
 
 async function gracefulShutdown(server: any) {
 	server.log.info("\n🛑 Shutting down server...");
-
+	TwoFAManager.getInstance().closeAllIntervals();
 	try {
 		await server.close();
 		server.log.info("✅ Fastify server closed");

@@ -2,6 +2,7 @@ import { setTimeout, clearTimeout } from 'timers';
 import * as crypto from 'crypto';
 import { IdUtils } from '../Utils/IdUtils';
 import nodemailer from 'nodemailer';
+import { ApiError } from '../Errors/ApiError';
 
 interface CodeEntry {
 	id: number,
@@ -45,6 +46,12 @@ export class TwoFAManager {
 
 		return code.toString().padStart(6, '0');
 	}
+
+	private onTwoFA(){
+
+
+	}
+
 
 	private setupExpiration(user_id: number, code: string): number {
 		const token = IdUtils.generateId(Date.now());
@@ -92,7 +99,7 @@ export class TwoFAManager {
 		const existingEntry = this.activeCodes.get(token);
 
 		if (!existingEntry) {
-			throw new Error("Cannot regenerate code: Token not found or expired.");
+			throw ApiError.Unauthorized("MISSING_2FATOKEN" ,"Cannot regenerate code: Token not found or expired.");
 		}
 
 		clearTimeout(existingEntry.timeoutId);
@@ -135,7 +142,7 @@ export class TwoFAManager {
 		const mailData = this.prepareMailData(token, recipientEmail);
 
 		if (!mailData) {
-			throw new Error("Cannot send mail: Invalid token of code expired."); // TODO: the integrated error handler
+			throw  ApiError.Unauthorized("INVALID_2FA_TOKEN", "Cannot send mail: Invalid token of code expired."); // TODO: the integrated error handler
 		}
 
 		try {

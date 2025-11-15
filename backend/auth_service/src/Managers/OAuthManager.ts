@@ -6,6 +6,8 @@ import { JWTManager } from './JWTManager';
 import { IdUtils } from '../Utils/IdUtils';
 import { OauthCredentialsInfo } from '../Interfaces/UserPrivateInfo';
 import { DbManager } from './DbManager';
+import { TwoFAManager } from './TwoFAManager';
+import { TwoFactorRequiredError } from '../Errors/TwoFactorRequiredError';
 
 // Définir la structure de la réponse d'échange de token (pour la clarté)
 interface GitHubTokenResponse {
@@ -127,6 +129,14 @@ export class OAuthManager {
 		const existingUser = db.getUserByOAuthId(userProfile.id.toString(), 'github');
 		if (existingUser) {
 			localUserId = existingUser.id;
+			//in case we want to combo 2FA + OAuth
+			if (existingUser.TwoFA) {
+				const TFAManager = TwoFAManager.getInstance();
+				const token = TFAManager.generateAndStoreCode(existingUser.id);
+				await TFAManager.sendMail(token, existingUser.email);
+
+				throw new TwoFactorRequiredError(token.toString());
+			}
 		} else {
 			const credentials: OauthCredentialsInfo = {
 				id: IdUtils.generateId(timestamp),

@@ -15,8 +15,8 @@ export class PasswordUtils {
 	private static readonly HAS_UPPERCASE = /[A-Z]/;
 	private static readonly HAS_LOWERCASE = /[a-z]/;
 	private static readonly HAS_NUMBER = /[0-9]/;
-	private static readonly HAS_SPECIAL = /[!@#$%^&*(),.?":{}|<>]/;
-	private static readonly PASSWORD_MIN_LEN = 12;
+	private static readonly HAS_SPECIAL = /[!@#$%^&*(),.?":{}|<>-_]/;
+	private static readonly PASSWORD_MIN_LEN = 8;
 	private static readonly PASSWORD_MAX_LEN = 64;
 	private static readonly SALT_ROUNDS = 12;
 
