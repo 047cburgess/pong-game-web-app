@@ -1,12 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { AuthManager } from "../Managers/AuthManager";
-import { TwoFAManager } from "../Managers/TwoFAManager";
-import { authErrorHandler, JwtCookieChecker } from "./Hanlders";
+import { authErrorHandler } from "./Hanlders";
 import fastifyCookie from "@fastify/cookie";
 import { OAuthManager } from "../Managers/OAuthManager";
-import { ApiError } from "../Errors/ApiError";
-import { TwoFactorRequiredError } from "../Errors/TwoFactorRequiredError";
-
 
 export interface LoginBody {
 	username: string, //can be either mail or username
@@ -66,8 +62,6 @@ export interface RegisterBody {
 }
 
 export async function AuthPlugin(server: FastifyInstance) {
-	await server.register(fastifyCookie); // ADD
-
 
 	server.setErrorHandler(authErrorHandler);
 
@@ -86,7 +80,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 
 	server.post<{ Body: LoginBody }>("/user/login", { schema: { body: loginBodySchema } }, async (request, reply) => {
 		const { username, password } = request.body;
-		
+
 		const jwt = await AuthManager.getInstance().login(username, password);
 		reply.setCookie("jwt", jwt, {
 			path: "/",
@@ -103,11 +97,17 @@ export async function AuthPlugin(server: FastifyInstance) {
 		const { code } = request.body;
 		const token2FA = request.cookies?.token2FA;
 		if (!token2FA)
-			return reply.status(401).send("MISSINGTwoFA_TOKEN");
+			return reply.status(401).send("MISSINGTWOFA_TOKEN");
 
 		const JWTtoken = AuthManager.getInstance().login2FA(parseInt(token2FA), code);
 
-		reply.clearCookie("token2FA");
+		reply.clearCookie("token2FA", {
+            path: "/user/login", 
+            httpOnly: true,
+            sameSite: "strict",
+            secure: "auto",
+        });
+		
 		reply.setCookie("jwt", JWTtoken, {
 			path: "/",
 			httpOnly: true,
@@ -131,7 +131,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 			httpOnly: true,
 			sameSite: "lax",
 			secure: false, //"auto" temp to false as browser doesnt like it
-			maxAge: 60 * 5 
+			maxAge: 60 * 5
 		});
 		return reply.status(200).send({ redirectUrl: url });
 	});
@@ -152,9 +152,13 @@ export async function AuthPlugin(server: FastifyInstance) {
 			expectedState
 		);
 
-		reply.clearCookie("tokenOAuth");
 		const token: string = await OAuthManager.getInstance().completeGitHubLogin(accessToken);
-
+		reply.clearCookie("tokenOAuth", {
+			path: "/user/oauth/github/callback",
+			httpOnly: true,
+			sameSite: "lax",
+			secure: false,
+		});
 		reply.setCookie("jwt", token, {
 			path: "/",
 			httpOnly: true,

@@ -2,7 +2,10 @@ import fastify from "fastify";
 import cors from '@fastify/cors';
 import { apiGateway } from "./Api/ApiGateway";
 import { AuthPlugin } from "./Api/AuthPuglin";
-
+import fastifyCookie from "@fastify/cookie";
+import fastifyStatic from "@fastify/static";
+import path from "path";
+import dotenv from 'dotenv';
 
 let isInitialized = false;
 let clearIntervalHandle: NodeJS.Timeout | null = null;
@@ -19,7 +22,7 @@ server.register(cors, {
 
 export function initializeApp() {
 	if (isInitialized) return;
-
+	dotenv.config();
 	isInitialized = true;
 	console.log('✅ App initialized');
 
@@ -41,10 +44,23 @@ export function createServer() {
 		}
 	});
 
+	server.register(fastifyStatic, {
+        root: path.join(process.cwd(), "../../frontend"),
+        // Ajoutez l'option `setHeaders` pour vous assurer que les fichiers JS sont bien identifiés
+        setHeaders: (res, path, stat) => {
+            if (path.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+            }
+        },
+        // Assurez-vous que l'option `extensions` ou `decorateReply` n'a rien cassé
+    });
+
+	server.register(fastifyCookie);
 
 	server.register(AuthPlugin);
 	server.register(apiGateway);
 
+	
 	server.addHook('onReady', () => {
 		server.log.info('Server ready');
 	});

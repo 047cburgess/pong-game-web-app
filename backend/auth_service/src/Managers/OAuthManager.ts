@@ -106,7 +106,7 @@ export class OAuthManager {
 				`GitHub: ${data.error_description || data.error || 'Inconnu'}`
 			);
 		}
-		
+
 		return { accessToken: data.access_token };
 	}
 
@@ -142,6 +142,7 @@ export class OAuthManager {
 	}
 
 	private async fetchGitHubUserProfile(accessToken: string): Promise<GitHubProfileResponse> {
+
 		const response = await fetch(this.GITHUB_USER_URL, {
 			method: 'GET',
 			headers: {
@@ -154,9 +155,36 @@ export class OAuthManager {
 			throw ApiError.Internal("GITHUB_API_ERROR", "Failed to retrieve user profile from GitHub API.");
 		}
 
-		const profileData = await response.json();
+		const profileData = await response.json() as GitHubProfileResponse;
 
-		return profileData as GitHubProfileResponse;
+		if (!profileData.email) {
+			const emailsResp = await fetch('https://api.github.com/user/emails', {
+				method: 'GET',
+				headers: {
+					'Authorization': `Bearer ${accessToken}`,
+					'Accept': 'application/vnd.github.v3+json',
+				},
+			});
+
+			if (emailsResp.ok) {
+				const emailsJson = await emailsResp.json(); // type unknown
+				const emails = emailsJson as {
+					email: string;
+					primary: boolean;
+					verified: boolean;
+					visibility: string | null;
+				}[];
+				const primaryEmail = emails.find(e => e.primary && e.verified);
+				if (primaryEmail) {
+					profileData.email = primaryEmail.email;
+				} else if (emails.length > 0) {
+					profileData.email = emails[0].email;
+				}
+			}
+		}
+
+		console.log(profileData);
+		return profileData;
 	}
 
 	public retrieveAndClearState(sessionId: string): string | undefined {

@@ -6,3 +6,31 @@ Env:
  setup the different variables
 
 everything needs to be tested
+
+❌
+
+ToTest:
+logout : ✔️
+login: ✔️ 
+session: ✔️
+register :  ✔️ | need to test with 2FA param and password protection is both too hard and does not recognizes enought special
+register Oauth : ✔️ , seems to work couldn't test using multiples github accounts
+login Oauth : ✔️
+
+2FA ; ✔️
+
+haven't tested every error type probably need to change the errors |
+returned during mail sending otherwise it will be 500
+
+ApiGateway:
+	requires:
+		seems to work at least for auth->user
+		haven't tested without cors nor in separate containers
+
+UserManagement :
+	delete user : reset profile info and friend list but keeps credentials
+	rename : ✔️
+	get friends : ✔️
+	avayars static get :
+		✔️ when fetching existing resource
+	avatar upload : ✔️

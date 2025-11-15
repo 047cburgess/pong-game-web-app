@@ -4,10 +4,13 @@ frontend/node_modules/
 frontend/dist/
 backend/auth_service/node_modules/
 backend/auth_service/dist/
+backend/auth_service/.env
+backend/auth_service/data/
 backend/user_service/dist/
+backend/user_service/data/
 backend/user_service/data/databases/
 backend/user_service/node_modules/
 TSP/
 old/
-./TODO.txt
+TODO.txt
 default.webp

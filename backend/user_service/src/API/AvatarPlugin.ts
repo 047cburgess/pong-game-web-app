@@ -13,7 +13,7 @@ export async function avatarPlugin(server: FastifyInstance) {
 	server.register(fastifyStatic, {
 		root: AVATAR_DIR,
 		prefix: "/user/avatars/",
-		decorateReply: false,
+		decorateReply: true,
 	});
 
 	server.setNotFoundHandler(async (req, reply) => {

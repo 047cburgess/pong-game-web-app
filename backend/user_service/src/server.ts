@@ -72,7 +72,7 @@ async function gracefulShutdown(server: any) {
 	process.exit(0);
 }
 
-server.listen({ port: 3000, host: "0.0.0.0" })
+server.listen({ port: 3002, host: "0.0.0.0" })
 	.then(() => console.log("✅ Serveur prêt sur http://localhost:3000"))
 	.catch(console.error);
 
