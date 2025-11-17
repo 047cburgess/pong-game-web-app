@@ -1,18 +1,25 @@
 services:
+  nginx:
+    image: nginx:1.29.3
+    networks:
+      - transcendence
+    volumes:
+      - ./nginx_conf.d:/etc/nginx/conf.d
+    ports:
+      - 9999:80
+
   game-service:
     build: ./backend/game_service
     container_name: game-service
     volumes:
       - ./backend/game_service:/app
       - /app/node_modules
-    ports:
-      - "3001:3000"
     networks:
       - transcendence
     environment:
       - TZ=${TZ}
-      - LISTEN_PORT=3000
-      - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}
+      - LISTEN_PORT=${LISTEN_PORT}
+      - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}:${MATCHMAKING_PORT}
       - LOG_LEVEL=${LOG_LEVEL}
       - NODE_ENV=${NODE_ENV}
     command: npm run dev
@@ -24,8 +31,6 @@ services:
       - ./backend/matchmaking_service:/app
       - /app/node_modules
       - ./backend/matchmaking_service/data:/app/data
-    ports:
-      - "3000:3000"
     networks:
       - transcendence
     environment:
@@ -46,8 +51,6 @@ services:
     container_name: user-service
     networks:
       - transcendence
-    ports:
-      - "3003:3000"
     volumes:
       - user-service-data:/app/data
     restart: unless-stopped
@@ -59,8 +62,6 @@ services:
     container_name: auth-service
     networks:
       - transcendence
-    ports:
-      - "3002:3000"
     volumes:
       - auth-service-data:/app/data
     restart: unless-stopped
@@ -80,6 +81,7 @@ services:
       - SMTP_FROM=${SMTP_FROM}
       - MATCHMAKING_SERVICE=${MATCHMAKING_SERVICE_URL}
       - USER_SERVICE=${USER_SERVICE_URL}
+
 volumes:
   user-service-data: {}
   auth-service-data: {}
