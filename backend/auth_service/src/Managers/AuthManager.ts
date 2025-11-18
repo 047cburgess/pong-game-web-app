@@ -94,7 +94,7 @@ export class AuthManager {
 			this.db.saveCredentials(credentialsInfo);
 		}
 		catch (e: any) {
-			if (e.code === 'SQLITE_CONSTRAINT') {
+			if (e.code === 'SQLITE_CONSTRAINT' || e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
 				const conflictDetails: string[] = [];
 
 				if (e.message.includes('username')) {

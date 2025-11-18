@@ -19,7 +19,7 @@ services:
     environment:
       - TZ=${TZ}
       - LISTEN_PORT=${LISTEN_PORT}
-      - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}:${MATCHMAKING_PORT}
+      - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}
       - LOG_LEVEL=${LOG_LEVEL}
       - NODE_ENV=${NODE_ENV}
     command: npm run dev

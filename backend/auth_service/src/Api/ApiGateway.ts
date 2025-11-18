@@ -8,27 +8,38 @@ export async function apiGateway(server: FastifyInstance) {
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
-		prefix: "/user/stats"
+		prefix: "/user/stats",
+		rewritePrefix: "/user/stats",
 	});
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
-		prefix: "/user/games"
+		prefix: "/users/:username/stats",
+		rewritePrefix: "/users/:username/stats",
 	});
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
-		prefix: "/user/tournaments"
+		prefix: "/user/games",
+		rewritePrefix: "/user/games",
 	});
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
-		prefix: "/games"
+		prefix: "/user/tournaments",
+		rewritePrefix: "/user/tournaments",
 	});
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
-		prefix: "/tournaments"
+		prefix: "/games",
+		rewritePrefix: "/games",
+	});
+
+	server.register(fastifyHttpProxy, {
+		upstream: `${process.env.MATCHMAKING_SERVICE}`,
+		prefix: "/tournaments",
+		rewritePrefix: "/tournaments",
 	});
 
 	server.register(fastifyHttpProxy, {

@@ -247,7 +247,7 @@ export class GameHistoryManager {
 			losses: row.losses,
 		}));
 		const recentGameRows = this.db.getRecentGamesByPlayer(userId, 5);
-		const recentGames = recentGameRows.map(row => this.transformGameRow(row));
+		const recentGames = recentGameRows.map(row => this.transformGameRow(row)) ?? [];
 		const recentTournamentRows = this.db.getRecentTournamentsByPlayer(userId, 5);
 		const recentTournaments = recentTournamentRows.map(row => this.transformTournamentRow(row));
 

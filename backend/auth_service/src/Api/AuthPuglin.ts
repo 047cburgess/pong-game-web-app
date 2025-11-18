@@ -58,15 +58,14 @@ export interface RegisterBody {
 	username: string,
 	email: string,
 	password: string,
-	TwoFA?: number   // amend for sqlite as doesnt take bools
+	// TwoFA?: number   // amend for sqlite as doesnt take bools
 }
 
 export async function AuthPlugin(server: FastifyInstance) {
 	server.setErrorHandler(authErrorHandler);
 
-	server.post<{ Body: RegisterBody }>("/user/register", { schema: { body: registerBodySchema } }, async (request, reply) => {
-
-		const token = await AuthManager.getInstance().register((request.body as RegisterBody));
+	server.post("/user/register", async (request, reply) => {
+    const token = await AuthManager.getInstance().register((request.body as RegisterBody));
 		reply.setCookie("jwt", token, {
 			path: "/",
 			httpOnly: true,
@@ -125,7 +124,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 		const { url, state } = OAuthManager.getInstance().generateRedirectUrl();
 
 		reply.setCookie("tokenOAuth", state, {
-			path: "/user/oauth/github/callback",
+			// path: "/user/oauth/github/callback",
 			httpOnly: true,
 			sameSite: "lax",
 			secure: false, //"auto" temp to false as browser doesnt like it
