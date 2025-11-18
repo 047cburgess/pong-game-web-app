@@ -77,6 +77,53 @@ await fastify.register(cors, {
 
 fastify.register(websocketPlugin);
 
+fastify.post('/games/local/create', async (req, resp) => {
+
+  fastify.log.debug('Entered /games/local/create');
+
+  let gameParams: GameProperties;
+  try {
+    gameParams = gamePropertiesSchema.parse(req.body);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return resp.status(400).send({
+        errors: error.issues.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        })),
+      });
+    }
+    return resp.status(500).send({ error: 'Server error' });
+  }
+
+  const gameId = randomUUID();
+  const game = new Game(gameId, gameParams);
+  const tokenExpiry = Date.now() + TOKEN_TTL_MS;
+
+  game.tokenExpiry = tokenExpiry;
+  game.abandonmentTimeout = setTimeout(
+    () => handleAbandonment(game),
+    TOKEN_TTL_MS + ABANDONMENT_GRACE_PERIOD_MS
+  );
+
+  games.set(gameId, game);
+
+  // BUILD THE RESPONSE GAME KEYS
+  const gameKeys = Array.from({ length: gameParams.nPlayers }).map(() => {
+    const playerId = randomUUID();
+    const key = createToken(playerId, gameId, tokenExpiry);
+    const tokenData = tokenMap.get(key)!;
+
+    return {
+      key,
+      gameId,
+      expires: new Date(tokenData.expires).toISOString()
+    };
+  });
+
+  return { gameKeys };
+});
+
 // ROUTE
 // FOR CLASSIC GAME (MATCHMAKING 2PL OR 2-4PL CUSTOM)
 // ROUTE FOR CLASSIC GAME (MATCHMAKING 2PL OR 2-4PL CUSTOM)
