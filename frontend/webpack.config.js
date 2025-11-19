@@ -45,6 +45,7 @@ module.exports = {
         context: ['/api/v1'],
         target: 'http://localhost:9999',
         changeOrigin: true,
+        ws: true, // Enable WebSocket proxying
         // pathRewrite: { '^/api/v1': '' },
       }
     ],
