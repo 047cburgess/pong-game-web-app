@@ -66,6 +66,16 @@ export async function apiGateway(server: FastifyInstance) {
 		prefix: "/ws",
 		rewritePrefix: "/ws",
 		websocket: true,
+		wsUpstream: `${process.env.GAME_SERVICE_URL}`.replace('http://', 'ws://'),
+		replyOptions: {
+			rewriteRequestHeaders: (originalReq, headers) => {
+				// Forward the x-user-id header for WebSocket connections
+				return {
+					...headers,
+					'x-user-id': originalReq.headers['x-user-id'] || '',
+				};
+			}
+		}
 	});
 
 	server.register(fastifyHttpProxy, {

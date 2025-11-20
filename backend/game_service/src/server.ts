@@ -321,7 +321,7 @@ fastify.register(async function(fastify) {
     (ws, req) => {
 
       const token = req.query.token;
-      const userId = req.query.userId ? Number(req.headers['x-user-id']) : undefined;
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
 
       fastify.log.debug(`Connection: Token: ${token}, UserId: ${userId ?? 'unregistered'}`);
 
