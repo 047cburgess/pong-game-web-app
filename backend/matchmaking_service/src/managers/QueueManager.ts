@@ -97,6 +97,26 @@ export class QueueManager {
 	}
 
 	/**
+	 * Remove a player from the queue if they are waiting
+	 * - Only works if player is in waiting game (first player waiting)
+	 * - Cannot leave if match already found (both players joined)
+	 * @param userId - The ID of the player leaving
+	 * @returns true if successfully left, false if not in queue
+	 */
+	leaveQueue(userId: UserId): boolean {
+		if (this.waitingGame && this.waitingGame.firstPlayerId === userId) {
+			this.log.info(
+				{ gameId: this.waitingGame.gameId, userId },
+				'Player leaving queue - cleaning up waiting game'
+			);
+			this.gameRegistry.unregister(this.waitingGame.gameId);
+			this.waitingGame = null;
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Process game completion webhook from game service
 	 * - Prepares game result and player participations for database
 	 * - Handles draw cases (when winnerId is null)
