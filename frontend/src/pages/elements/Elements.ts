@@ -2,262 +2,329 @@ import { FieldValidator } from "../../FieldValidators";
 import { INPUT_BOX_OUTLINE, INPUT_BOX_RED_OUTLINE } from "./CssUtils";
 
 export abstract class AElement {
-  id?: string;
-  classes: string[] = [];
-  private onclick?: (this: GlobalEventHandlers, e: PointerEvent) => any;
-  private inlineStyle?: string;
+	id?: string;
+	classes: string[] = [];
+	private onclick?: (this: GlobalEventHandlers, e: PointerEvent) => any;
+	private onmouseover?: (this: GlobalEventHandlers, e: MouseEvent) => any;
+	private onmouseleave?: (this: GlobalEventHandlers, e: MouseEvent) => any;
+	private inlineStyle?: string;
 
-  abstract render(): string;
+	abstract render(): string;
 
-  withId(c: string): AElement {
-    this.id = c;
-    return this;
-  }
+	withId(c: string): AElement {
+		this.id = c;
+		return this;
+	}
 
-  class(c: string | Iterable<string> = ""): AElement {
-    if (typeof c === 'string') {
-      this.classes.push(c);
-    } else {
-      for (const x of c) {
-        this.classes.push(x);
-      }
-    }
-    return this;
-  }
+	class(c: string | Iterable<string> = ""): AElement {
+		if (typeof c === 'string') {
+			this.classes.push(c);
+		} else {
+			for (const x of c) {
+				this.classes.push(x);
+			}
+		}
+		return this;
+	}
 
-  withOnclick(
-    onclick: (this: GlobalEventHandlers, e: PointerEvent) => any
-  ): AElement {
-    this.onclick = onclick;
-    return this;
-  }
+	remove_class(c: string | Iterable<string> = ""): AElement {
+		if (typeof c === 'string') {
+			this.classes = this.classes.filter(cl => cl !== c);
+		} else {
+			const set = new Set(c);
+			this.classes = this.classes.filter(cl => !set.has(cl));
+		}
+		return this;
+	}
 
-  withStyle(style: string): AElement {
-    this.inlineStyle = style;
-    return this;
-  }
 
-  protected genTags(): string {
-    let res = "";
-    if (this.id) {
-      res += `id="${this.id}" `;
-    }
-    if (this.classes.length) {
-      res += `class="${this.classes.join(" ")}" `;
-    }
-    if (this.inlineStyle) {
-      res += `style="${this.inlineStyle}" `;
-    }
-    return res;
-  }
+	withOnclick(
+		onclick: (this: GlobalEventHandlers, e: PointerEvent) => any
+	): AElement {
+		this.onclick = onclick;
+		return this;
+	}
 
-  byId(): HTMLElement | null {
-    if (this.id) {
-      return document.getElementById(this.id);
-    }
-    return null;
-  }
+	withOnHover(
+		onhover: (this: GlobalEventHandlers, e: MouseEvent) => any
+	): AElement {
+		this.onmouseover = onhover;
+		return this;
+	}
 
-  redraw(): void {
-    const self = this.byId();
-    if (!self) {
-      return;
-    }
-    self.outerHTML = this.render();
-  }
+	withOnLeave(
+		onleave: (this: GlobalEventHandlers, e: MouseEvent) => any
+	): AElement {
+		this.onmouseleave = onleave;
+		return this;
+	}
 
-  bindEvents(): void {
-    const self = this.byId();
-    if (!self) return;
-    self.onclick = this.onclick ?? null;
-  }
+	withStyle(style: string): AElement {
+		this.inlineStyle = style;
+		return this;
+	}
+
+	protected genTags(): string {
+		let res = "";
+		if (this.id) {
+			res += `id="${this.id}" `;
+		}
+		if (this.classes.length) {
+			res += `class="${this.classes.join(" ")}" `;
+		}
+		if (this.inlineStyle) {
+			res += `style="${this.inlineStyle}" `;
+		}
+		return res;
+	}
+
+	byId(): HTMLElement | null {
+		if (this.id) {
+			return document.getElementById(this.id);
+		}
+		return null;
+	}
+
+	redraw(): void {
+		const self = this.byId();
+		if (!self) {
+			return;
+		}
+		self.outerHTML = this.render();
+	}
+
+	bindEvents(): void {
+		const self = this.byId();
+		if (!self) return;
+		self.onclick = this.onclick ?? null;
+		self.onmouseover = this.onmouseover ?? null;
+		self.onmouseleave = this.onmouseleave ?? null;
+	}
 }
 
 export class Paragraph extends AElement {
-  text: string = "";
+	text: string = "";
 
-  constructor(text: string) {
-    super();
-    this.text = text;
-  }
+	constructor(text: string) {
+		super();
+		this.text = text;
+	}
 
-  render(): string {
-    return `<p ${this.genTags()}>${this.text}</p>`;
-  }
+	render(): string {
+		return `<p ${this.genTags()}>${this.text}</p>`;
+	}
 };
 
 export class Label extends AElement {
-  text: string;
+	text: string;
 
-  constructor(text: string) {
-    super();
-    this.text = text;
-  }
+	constructor(text: string) {
+		super();
+		this.text = text;
+	}
 
-  render(): string {
-    return `<label ${this.genTags()}>${this.text}</label>`;
-  }
+	render(): string {
+		return `<label ${this.genTags()}>${this.text}</label>`;
+	}
 };
 
 export class Textbox extends AElement {
-  private _password: boolean = false;
-  private onkeydown?: (this: GlobalEventHandlers, e: KeyboardEvent) => any;
-  private postVal?: (e: Textbox) => any;
-  validators: FieldValidator[] = [];
-  validationErrors: string[] | undefined;
+	private _password: boolean = false;
+	private onkeydown?: (this: GlobalEventHandlers, e: KeyboardEvent) => any;
+	private postVal?: (e: Textbox) => any;
+	validators: FieldValidator[] = [];
+	validationErrors: string[] | undefined;
 
-  constructor(id: string) {
-    super();
-    this.id = id;
-  }
+	constructor(id: string) {
+		super();
+		this.id = id;
+	}
 
-  password(): Textbox {
-    this._password = true;
-    return this;
-  }
+	password(): Textbox {
+		this._password = true;
+		return this;
+	}
 
-  render(): string {
-    const t = this._password ? "password" : "text";
-    return `<input type="${t}" ${this.genTags()}/>`;
-  }
+	render(): string {
+		const t = this._password ? "password" : "text";
+		return `<input type="${t}" ${this.genTags()}/>`;
+	}
 
-  runValidators() {
-    const self = this.byId() as null | HTMLInputElement;
-    if (!self) return;
-    let errors: undefined | string[];
-    for (const v of this.validators) {
-      const res = v(self.value);
-      if (res === null) {
-        continue;
-      }
-      errors = errors ?? [];
-      errors.push(...res);
-    }
-    if (errors !== undefined) {
-      self.classList.remove(...INPUT_BOX_OUTLINE);
-      self.classList.add(...INPUT_BOX_RED_OUTLINE);
-    } else {
-      self.classList.remove(...INPUT_BOX_RED_OUTLINE);
-      self.classList.add(...INPUT_BOX_OUTLINE);
-    }
-    this.validationErrors = errors;
-    this.postVal?.call(null, this);
-  }
+	runValidators() {
+		const self = this.byId() as null | HTMLInputElement;
+		if (!self) return;
+		let errors: undefined | string[];
+		for (const v of this.validators) {
+			const res = v(self.value);
+			if (res === null) {
+				continue;
+			}
+			errors = errors ?? [];
+			errors.push(...res);
+		}
+		if (errors !== undefined) {
+			self.classList.remove(...INPUT_BOX_OUTLINE);
+			self.classList.add(...INPUT_BOX_RED_OUTLINE);
+		} else {
+			self.classList.remove(...INPUT_BOX_RED_OUTLINE);
+			self.classList.add(...INPUT_BOX_OUTLINE);
+		}
+		this.validationErrors = errors;
+		this.postVal?.call(null, this);
+	}
 
-  bindEvents(): void {
-    super.bindEvents();
-    const self = this.byId() as null | HTMLInputElement;
-    if (!self) return;
-    self.onkeyup = this.runValidators.bind(this);
-    self.onkeydown = this.onkeydown ?? null;
-  }
+	bindEvents(): void {
+		super.bindEvents();
+		const self = this.byId() as null | HTMLInputElement;
+		if (!self) return;
+		self.onkeyup = this.runValidators.bind(this);
+		self.onkeydown = this.onkeydown ?? null;
+	}
 
-  withOnkeydown(
-    onkeydown: (this: GlobalEventHandlers, e: KeyboardEvent) => any
-  ): Textbox {
-    this.onkeydown = onkeydown;
-    return this;
-  }
+	withOnkeydown(
+		onkeydown: (this: GlobalEventHandlers, e: KeyboardEvent) => any
+	): Textbox {
+		this.onkeydown = onkeydown;
+		return this;
+	}
 
-  withValidator(v: FieldValidator): Textbox {
-    this.validators.push(v);
-    return this;
-  }
+	withValidator(v: FieldValidator): Textbox {
+		this.validators.push(v);
+		return this;
+	}
 
-  postValidation(cb: null | ((e: Textbox) => any)): Textbox {
-    if (cb) this.postVal = cb;
-    else delete this.postVal;
-    return this;
-  }
+	postValidation(cb: null | ((e: Textbox) => any)): Textbox {
+		if (cb) this.postVal = cb;
+		else delete this.postVal;
+		return this;
+	}
 };
 
 export class Header extends AElement {
-  level: number;
-  text: string;
+	level: number;
+	text: string;
 
-  constructor(level: number, text: string) {
-    super();
-    this.level = level;
-    this.text = text;
-  }
+	constructor(level: number, text: string) {
+		super();
+		this.level = level;
+		this.text = text;
+	}
 
-  render(): string {
-    return `<h${this.level} ${this.genTags()}>${this.text}</h${this.level}>`;
-  }
+	render(): string {
+		return `<h${this.level} ${this.genTags()}>${this.text}</h${this.level}>`;
+	}
 };
 
 export class Inline extends AElement {
-  value: string;
+	value: string;
 
-  constructor(value: string = "") {
-    super();
-    this.value = value;
-  }
+	constructor(value: string = "") {
+		super();
+		this.value = value;
+	}
 
-  render(): string {
-    return this.value;
-  }
+	render(): string {
+		return this.value;
+	}
 
-  class(_?: string | Iterable<string>): AElement {
-    return this;
-  }
+	class(_?: string | Iterable<string>): AElement {
+		return this;
+	}
 };
 
 export class Image extends AElement {
-  src: string;
+	src: string;
 
-  constructor(src: string) {
-    super();
+	constructor(src: string) {
+		super();
 
-    this.src = src;
-  }
+		this.src = src;
+	}
 
-  render(): string {
-    return `<img class="object-fill max-h-full drop-shadow-md rounded-md m-auto" src="${this.src}" ${this.genTags()}/>`;
-  }
+	render(): string {
+		return `<img class="object-fill max-h-full drop-shadow-md rounded-md m-auto" src="${this.src}" ${this.genTags()}/>`;
+	}
 };
 
 export abstract class AContainer extends AElement {
-  contents: AElement[] = [];
+	contents: AElement[] = [];
 
-  constructor(...contents: AElement[]) {
-    super();
-    this.contents = contents;
-  }
+	constructor(...contents: AElement[]) {
+		super();
+		this.contents = contents;
+	}
 
-  renderContents(): string {
-    return this.contents.map(e => e.render()).join("");
-  }
 
-  bindEvents(): void {
-    super.bindEvents();
-    this.contents.forEach(e => e.bindEvents());
-  }
+	replaceContent(oldElement: AElement, newElement: AElement, insert : boolean = false): AContainer {
+		const index = this.contents.findIndex(c => c === oldElement);
+		if (index !== -1) {
+			this.contents[index] = newElement;
+		} else {
+			if (insert) return this;
+				this.contents.push(newElement);
+		}
+		return this;
+	}
 
-  redrawInner(): void {
-    const self = this.byId();
-    if (!self) return;
-    self.innerHTML = this.renderContents();
-    this.bindEvents();
-  }
+	removeContent(...contents: AElement[]): AContainer {
+		this.contents = this.contents.filter(c => !contents.includes(c));
+		return this;
+	}
+
+	addContent(contents: AElement | Iterable<AElement>): AContainer {
+		if (!(Symbol.iterator in Object(contents))) {
+			this._addOrUpdate(contents as AElement);
+		} else {
+			for (const x of contents as Iterable<AElement>) {
+				this._addOrUpdate(x);
+			}
+		}
+		return this;
+	}
+
+	//could simply use a set instead of array but whatever
+	private _addOrUpdate(element: AElement) {
+		const index = this.contents.findIndex(c => c === element);
+		if (index !== -1) {
+			this.contents[index] = element;
+		} else {
+			this.contents.push(element);
+		}
+	}
+
+	renderContents(): string {
+		return this.contents.map(e => e.render()).join("");
+	}
+
+	bindEvents(): void {
+		super.bindEvents();
+		this.contents.forEach(e => e.bindEvents());
+	}
+
+	redrawInner(): void {
+		const self = this.byId();
+		if (!self) return;
+		self.innerHTML = this.renderContents();
+		this.bindEvents();
+	}
 }
 
 export class Div extends AContainer {
-  constructor(...contents: AElement[]) {
-    super(...contents);
-  }
+	constructor(...contents: AElement[]) {
+		super(...contents);
+	}
 
-  render(): string {
-    return `<div ${this.genTags()}>${this.renderContents()}</div>`;
-  }
+	render(): string {
+		return `<div ${this.genTags()}>${this.renderContents()}</div>`;
+	}
 }
 
 export class Button extends AContainer {
-  constructor(...contents: AElement[]) {
-    super(...contents);
-  }
+	constructor(...contents: AElement[]) {
+		super(...contents);
+	}
 
-  render(): string {
-    return `<button ${this.genTags()}>${this.renderContents()}</button>`;
-  }
+	render(): string {
+		return `<button ${this.genTags()}>${this.renderContents()}</button>`;
+	}
 };
