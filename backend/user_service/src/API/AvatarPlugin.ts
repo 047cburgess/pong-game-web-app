@@ -25,12 +25,16 @@ export async function avatarPlugin(server: FastifyInstance) {
 
 	server.register(fastifyMultipart, {
 		limits: {
-			fileSize: 2 * 1024 * 1024, // 2 MB en octets
+			fileSize: 8 * 1024 * 1024,
 		},
 	});
 
-	server.post("/user/avatar", { preHandler: onUserSeen }, async (request, reply) => {
+	server.post("/user/avatar", {
+    preHandler: onUserSeen,
+  }, async (request, reply) => {
 		const user_id = request.sender_id;
+
+      console.log(request.headers);
 
 		try {
 			const mpFile = await request.file();
@@ -39,8 +43,10 @@ export async function avatarPlugin(server: FastifyInstance) {
 				return reply.status(400).send("NO_FILE_RECEIVED");
 			}
 			const buffer = await mpFile.toBuffer();
-			await CommandManager.get(UploadAvatarCommand).execute(user_id!, { buffer: buffer, mimetype: mpFile.mimetype });
-			return reply.status(204).send();
+			const res = await CommandManager.get(UploadAvatarCommand).execute(user_id!, { buffer: buffer, mimetype: mpFile.mimetype });
+      if (res.success)
+        return reply.status(204).send();
+      return reply.status(400).send(res);
 		} catch (err: any) {
 			if (err.code === "FST_FILES_LIMIT" || err.message.includes("File too large")) {
 				return reply.status(413).send("FILE_TOO_LARGE");

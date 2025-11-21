@@ -41,10 +41,7 @@ export class AuthManager {
 
 		const user = this.db.getUserByCredential(credential);
 
-		if (!user) {
-			throw ApiError.Unauthorized("AUTHENTIFICATION_FAILED", "Incorrect Username.");
-		}
-		if (!await PasswordUtils.compare(password, user.password)) {
+		if (!user || !await PasswordUtils.compare(password, user.password)) {
 			throw ApiError.Unauthorized("AUTHENTIFICATION_FAILED", "Nom d'utilisateur ou mot de passe incorrect.");
 		}
 

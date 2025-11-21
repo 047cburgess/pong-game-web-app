@@ -7,6 +7,8 @@ services:
       - ./nginx_conf.d:/etc/nginx/conf.d
     ports:
       - 9999:80
+    depends_on:
+      - auth-service
 
   game-service:
     build: ./backend/game_service
