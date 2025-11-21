@@ -47,9 +47,9 @@ export class UploadAvatarCommand extends CommandBase {
 			return result;
 		}
 
-		if (!metadata.width || !metadata.height || metadata.width > 1024 || metadata.height > 1024) {
-			result.errors.push(AvatarErrors.INVALID_DIMENSIONS);
-		}
+		// if (!metadata.width || !metadata.height || metadata.width > 1024 || metadata.height > 1024) {
+		// 	result.errors.push(AvatarErrors.INVALID_DIMENSIONS);
+		// }
 
 		const allowedFormats = ["jpeg", "png", "webp", "gif"];
 		if (!metadata.format || !allowedFormats.includes(metadata.format)) {

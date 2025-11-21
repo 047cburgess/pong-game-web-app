@@ -33,6 +33,12 @@ export async function apiGateway(server: FastifyInstance) {
 	});
 
 	server.register(fastifyHttpProxy, {
+		upstream: `${process.env.USER_SERVICE}`,
+		prefix: "/users/:username",
+		rewritePrefix: "/users/:username",
+	});
+
+	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
 		prefix: "/user/games",
 		rewritePrefix: "/user/games",
