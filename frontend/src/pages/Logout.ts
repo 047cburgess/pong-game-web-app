@@ -18,7 +18,7 @@ export default class LogoutPage extends Page {
         .class(HOW_TO_CENTER_A_DIV)
         .class("absolute top-1/2 left-1/2")
         .class("transform -translate-y-1/2 -translate-x-1/2")
-        .class("flex flex-col select-none font-bold")
+        .class("flex flex-col select-none font-bold"),
     ];
   }
 

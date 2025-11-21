@@ -1,4 +1,4 @@
-import './styles.css';
+import "./styles.css";
 
 import Router, { Page } from "./Router";
 import WelcomePage from "./pages/Welcome";
@@ -11,18 +11,20 @@ import FriendsPage from "./pages/Friends";
 import MatchHistoryPage from "./pages/MatchHistory";
 import { AElement, Div, Paragraph } from "./pages/elements/Elements";
 import { HOW_TO_CENTER_A_DIV, MUTED_TEXT } from "./pages/elements/CssUtils";
-import RegisterPage from './pages/Register';
-import TournamentHistoryPage from './pages/TournamentHistory';
-import LogoutPage from './pages/Logout';
-import GithubCallback from './pages/OauthCallback';
-import SettingsPage from './pages/Settings';
-import PlayPage from './pages/Play';
-import GameLocalPage from './pages/GameLocal';
+import RegisterPage from "./pages/Register";
+import TournamentHistoryPage from "./pages/TournamentHistory";
+import LogoutPage from "./pages/Logout";
+import GithubCallback from "./pages/OauthCallback";
+import SettingsPage from "./pages/Settings";
+import PlayPage from "./pages/Play";
+import GameLocalPage from "./pages/GameLocal";
 
 export const getUsername = (): string | null => {
-  return new URLSearchParams(location.search).get("user")
+  return (
+    new URLSearchParams(location.search).get("user")
     ?? APP.userInfo?.username
-    ?? null;
+    ?? null
+  );
 };
 
 class RedirToLogin extends Page {
@@ -92,7 +94,10 @@ class App {
   private reloadHeader() {
     this.header = new PageHeader(this.router, this.userInfo);
     this.headerRoot.innerHTML = "";
-    this.headerRoot.innerHTML = this.header.content().map((e) => e.render()).join("");
+    this.headerRoot.innerHTML = this.header
+      .content()
+      .map((e) => e.render())
+      .join("");
     this.header.bindEvents();
   }
 
@@ -107,8 +112,10 @@ class App {
   }
 }
 
-const resp = await API.fetch("/user")
-const info: SelfInfo | null = (resp.ok || resp.status === 304)
-  ? await resp.json().catch(console.error) : null;
+const resp = await API.fetch("/user");
+const info: SelfInfo | null =
+  resp.ok || resp.status === 304 ?
+    await resp.json().catch(console.error)
+  : null;
 
 export const APP = new App(info);

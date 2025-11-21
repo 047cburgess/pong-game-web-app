@@ -1,8 +1,8 @@
 import { GameResultExt } from "../../Api";
 import { AElement, Div, Paragraph } from "./Elements";
 
-const CARD_STYLES: string
-  = "flex flex-row p-6 transition duration-200 select-none rounded-xl";
+const CARD_STYLES: string =
+  "flex flex-row p-6 transition duration-200 select-none rounded-xl";
 
 const cardTextFromResult = (r: GameResultExt): string => {
   if (!r.winnerId) {
@@ -26,7 +26,9 @@ const cardBgFromResult = (r: GameResultExt | undefined): string => {
     return outline + " hover:bg-gray-500/50 outline-gray-500 bg-gray-600/50";
   }
   if (r.winnerId === r.thisUser) {
-    return outline + " hover:bg-emerald-600/50 outline-emerald-700 bg-emerald-800/50";
+    return (
+      outline + " hover:bg-emerald-600/50 outline-emerald-700 bg-emerald-800/50"
+    );
   }
   return outline + " hover:bg-red-700/50 outline-red-800 bg-red-900/50";
 };
@@ -49,18 +51,19 @@ export class GameCardLarge extends GameCardBase {
 
     if (!this.data) {
       this.contents = [
-        new Paragraph("Loading...")
-          .class("font-bold text-xl self-center ml-4 text-zinc-700")
+        new Paragraph("Loading...").class(
+          "font-bold text-xl self-center ml-4 text-zinc-700",
+        ),
       ];
       return;
     }
 
     this.contents = [
       new Div(
-        new Paragraph(this.data.date.toLocaleString())
-          .class("font-bold text-xs pr-2"),
-        new Paragraph(cardTextFromResult(this.data))
-          .class("font-bold text-xl"),
+        new Paragraph(this.data.date.toLocaleString()).class(
+          "font-bold text-xs pr-2",
+        ),
+        new Paragraph(cardTextFromResult(this.data)).class("font-bold text-xl"),
       ).class("m-2 ml-4 self-center w-40"),
       this.scoreDiv().class("grow"),
     ];
@@ -76,7 +79,7 @@ export class GameCardLarge extends GameCardBase {
         new Div(
           new Paragraph(`${this.data.players[i].score}`),
           new Paragraph(`${this.data.players[i].id}`),
-        ).class("flex flex-row justify-between gap-2")
+        ).class("flex flex-row justify-between gap-2"),
       );
     }
     return new Div(

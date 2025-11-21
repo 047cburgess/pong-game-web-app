@@ -17,8 +17,8 @@ export abstract class AElement {
   }
 
   class(c: string | Iterable<string> = ""): AElement {
-    if (typeof c === 'string') {
-      c.split(/\s+/).forEach(c => this.classes.add(c));
+    if (typeof c === "string") {
+      c.split(/\s+/).forEach((c) => this.classes.add(c));
     } else {
       for (const x of c) {
         this.class(x);
@@ -28,8 +28,8 @@ export abstract class AElement {
   }
 
   removeClass(c: string | Iterable<string> = ""): AElement {
-    if (typeof c === 'string') {
-      c.split(/s+/).forEach(c => this.classes.delete(c));
+    if (typeof c === "string") {
+      c.split(/s+/).forEach((c) => this.classes.delete(c));
     } else {
       for (const x of c) {
         this.removeClass(x);
@@ -38,23 +38,22 @@ export abstract class AElement {
     return this;
   }
 
-
   withOnclick(
-    onclick: (this: GlobalEventHandlers, e: PointerEvent) => any
+    onclick: (this: GlobalEventHandlers, e: PointerEvent) => any,
   ): AElement {
     this.onclick = onclick;
     return this;
   }
 
   withOnHover(
-    onhover: (this: GlobalEventHandlers, e: MouseEvent) => any
+    onhover: (this: GlobalEventHandlers, e: MouseEvent) => any,
   ): AElement {
     this.onmouseover = onhover;
     return this;
   }
 
   withOnLeave(
-    onleave: (this: GlobalEventHandlers, e: MouseEvent) => any
+    onleave: (this: GlobalEventHandlers, e: MouseEvent) => any,
   ): AElement {
     this.onmouseleave = onleave;
     return this;
@@ -118,7 +117,7 @@ export class Paragraph extends AElement {
   render(): string {
     return `<p ${this.genTags()}>${this.text}</p>`;
   }
-};
+}
 
 export class Label extends AElement {
   text: string;
@@ -131,7 +130,7 @@ export class Label extends AElement {
   render(): string {
     return `<label ${this.genTags()}>${this.text}</label>`;
   }
-};
+}
 
 export class Textbox extends AElement {
   private _password: boolean = false;
@@ -187,7 +186,7 @@ export class Textbox extends AElement {
   }
 
   withOnkeydown(
-    onkeydown: (this: GlobalEventHandlers, e: KeyboardEvent) => any
+    onkeydown: (this: GlobalEventHandlers, e: KeyboardEvent) => any,
   ): Textbox {
     this.onkeydown = onkeydown;
     return this;
@@ -203,7 +202,7 @@ export class Textbox extends AElement {
     else delete this.postVal;
     return this;
   }
-};
+}
 
 export class Header extends AElement {
   level: number;
@@ -218,7 +217,7 @@ export class Header extends AElement {
   render(): string {
     return `<h${this.level} ${this.genTags()}>${this.text}</h${this.level}>`;
   }
-};
+}
 
 export class Inline extends AElement {
   value: string;
@@ -235,7 +234,7 @@ export class Inline extends AElement {
   class(_?: string | Iterable<string>): AElement {
     return this;
   }
-};
+}
 
 export class Image extends AElement {
   src: string;
@@ -249,7 +248,7 @@ export class Image extends AElement {
   render(): string {
     return `<img class="object-cover h-full drop-shadow-md rounded-md m-auto" src="${this.src}?_=shit${Date.now()}" ${this.genTags()}/>`;
   }
-};
+}
 
 export abstract class AContainer extends AElement {
   contents: AElement[] = [];
@@ -259,9 +258,12 @@ export abstract class AContainer extends AElement {
     this.contents = contents;
   }
 
-
-  replaceContent(oldElement: AElement, newElement: AElement, insert: boolean = false): AContainer {
-    const index = this.contents.findIndex(c => c === oldElement);
+  replaceContent(
+    oldElement: AElement,
+    newElement: AElement,
+    insert: boolean = false,
+  ): AContainer {
+    const index = this.contents.findIndex((c) => c === oldElement);
     if (index !== -1) {
       this.contents[index] = newElement;
     } else {
@@ -272,7 +274,7 @@ export abstract class AContainer extends AElement {
   }
 
   removeContent(...contents: AElement[]): AContainer {
-    this.contents = this.contents.filter(c => !contents.includes(c));
+    this.contents = this.contents.filter((c) => !contents.includes(c));
     return this;
   }
 
@@ -289,7 +291,7 @@ export abstract class AContainer extends AElement {
 
   //could simply use a set instead of array but whatever
   private _addOrUpdate(element: AElement) {
-    const index = this.contents.findIndex(c => c === element);
+    const index = this.contents.findIndex((c) => c === element);
     if (index !== -1) {
       this.contents[index] = element;
     } else {
@@ -298,12 +300,12 @@ export abstract class AContainer extends AElement {
   }
 
   renderContents(): string {
-    return this.contents.map(e => e.render()).join("");
+    return this.contents.map((e) => e.render()).join("");
   }
 
   bindEvents(): void {
     super.bindEvents();
-    this.contents.forEach(e => e.bindEvents());
+    this.contents.forEach((e) => e.bindEvents());
   }
 
   redrawInner(): void {
@@ -332,4 +334,4 @@ export class Button extends AContainer {
   render(): string {
     return `<button ${this.genTags()}>${this.renderContents()}</button>`;
   }
-};
+}

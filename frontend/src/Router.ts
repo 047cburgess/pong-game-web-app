@@ -13,11 +13,13 @@ export abstract class Page {
   }
 
   abstract content(): AElement[];
-  bindEvents(): void { }
-  transitionIn(): null | void { return null; }
-  transitionAway(): number | void { }
+  bindEvents(): void {}
+  transitionIn(): null | void {
+    return null;
+  }
+  transitionAway(): number | void {}
 
-  async loadData(): Promise<void> { }
+  async loadData(): Promise<void> {}
 }
 
 const AUTO_ANIM_PRE = [
@@ -26,12 +28,7 @@ const AUTO_ANIM_PRE = [
   "duration-400",
   "opacity-100",
 ];
-const AUTO_ANIM = [
-  "transition",
-  "ease-in-out",
-  "duration-400",
-  "opacity-0",
-];
+const AUTO_ANIM = ["transition", "ease-in-out", "duration-400", "opacity-0"];
 
 export class NavError extends Error {
   error: number | string;
@@ -40,7 +37,7 @@ export class NavError extends Error {
     super();
     this.error = error;
   }
-};
+}
 
 export default class Router {
   private routes: { [key: string]: new (r: Router) => Page } = {};
@@ -71,21 +68,23 @@ export default class Router {
     if (this.navPending) {
       return;
     }
-    API.fetch("/user").then(async (resp) => {
-      if (resp.ok && !APP.userInfo) {
-        console.log(resp);
-        APP.onLogin(await resp.json());
-        return;
-      }
-      if (resp.status === 401 && APP.userInfo) {
-        this.navPending !== undefined && clearTimeout(this.navPending);
-        delete this.navPending;
-        APP.onLogout();
-        this.navigate("/login");
-      }
-    }).catch(console.error);
+    API.fetch("/user")
+      .then(async (resp) => {
+        if (resp.ok && !APP.userInfo) {
+          console.log(resp);
+          APP.onLogin(await resp.json());
+          return;
+        }
+        if (resp.status === 401 && APP.userInfo) {
+          this.navPending !== undefined && clearTimeout(this.navPending);
+          delete this.navPending;
+          APP.onLogout();
+          this.navigate("/login");
+        }
+      })
+      .catch(console.error);
     let routes = this.routes;
-    if (typeof path === 'number') {
+    if (typeof path === "number") {
       routes = this.errors;
       path = path.toString();
     }
@@ -109,10 +108,12 @@ export default class Router {
     if (this.currentPage && delay === 0) {
       requestAnimationFrame(() => {
         this.rootElement.classList.add(...AUTO_ANIM_PRE);
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          this.rootElement.classList.remove(...AUTO_ANIM_PRE);
-          this.rootElement.classList.add(...AUTO_ANIM);
-        }));
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            this.rootElement.classList.remove(...AUTO_ANIM_PRE);
+            this.rootElement.classList.add(...AUTO_ANIM);
+          }),
+        );
       });
       delay = 550;
     }
@@ -139,11 +140,15 @@ export default class Router {
       if (!this.currentPage) {
         this.currentPage = {
           router: this,
-          content: () => { return []; },
-          bindEvents: () => { },
-          transitionIn: () => { return null; },
-          transitionAway: () => { },
-          loadData: async () => { },
+          content: () => {
+            return [];
+          },
+          bindEvents: () => {},
+          transitionIn: () => {
+            return null;
+          },
+          transitionAway: () => {},
+          loadData: async () => {},
         };
       }
       this.rootElement.classList.remove(...AUTO_ANIM, ...AUTO_ANIM_PRE);
@@ -166,8 +171,10 @@ export default class Router {
   redraw(): void {
     this.rootElement.innerHTML = "";
     if (this.currentPage) {
-      this.rootElement.innerHTML
-        = this.currentPage.content().map((e) => e.render()).join(" ");
+      this.rootElement.innerHTML = this.currentPage
+        .content()
+        .map((e) => e.render())
+        .join(" ");
     }
   }
 }

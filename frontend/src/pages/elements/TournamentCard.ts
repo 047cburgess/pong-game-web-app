@@ -19,4 +19,4 @@ export default class TournamentCard extends Div {
     super();
     this.data = data;
   }
-};
+}

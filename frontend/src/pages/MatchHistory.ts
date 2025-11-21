@@ -14,7 +14,11 @@ export default class MatchHistoryPage extends AListPage {
   games?: GameResultExt[];
 
   constructor(router: Router) {
-    super(router, "game-hist", titleForUser("Match history", getUsername() ?? ""));
+    super(
+      router,
+      "game-hist",
+      titleForUser("Match history", getUsername() ?? ""),
+    );
 
     const username = getUsername();
     if (!username) throw new NavError(401);
@@ -39,12 +43,15 @@ export default class MatchHistoryPage extends AListPage {
       return;
     }
 
-    const games = await resp.json().catch(console.error) as void |
-      ApiPaths["/users/{username}/games"]["get"]["responses"]["200"]["content"]["application/json"];
+    const games = (await resp.json().catch(console.error)) as
+      | void
+      | ApiPaths["/users/{username}/games"]["get"]["responses"]["200"]["content"]["application/json"];
 
     if (!games) {
       this.setContents([
-        new Paragraph("Failure: You failed to fetch match history data. What a disgrace.")
+        new Paragraph(
+          "Failure: You failed to fetch match history data. What a disgrace.",
+        )
           .class(EVIL_RED_BUTTON)
           .class("text-xl p-4"),
       ]);
@@ -52,11 +59,11 @@ export default class MatchHistoryPage extends AListPage {
       return;
     }
 
-    const ids = new Set(games.flatMap(g => g.players).map(p => p.id));
+    const ids = new Set(games.flatMap((g) => g.players).map((p) => p.id));
     const userInfos: Map<string | number, UserInfo> = new Map();
     const proms = [];
     for (const id of ids) {
-      proms.push(userFromMaybeId(id).then(info => userInfos.set(id, info)));
+      proms.push(userFromMaybeId(id).then((info) => userInfos.set(id, info)));
     }
     await Promise.all(proms);
 
@@ -64,15 +71,15 @@ export default class MatchHistoryPage extends AListPage {
     // we're javascripting this shit
     let currId: null | number = null;
     for (const [id, info] of userInfos) {
-      if (typeof id === 'number' && info.username === this.username) {
+      if (typeof id === "number" && info.username === this.username) {
         currId = id;
         break;
       }
     }
 
-    this.games = games.map(_g => {
+    this.games = games.map((_g) => {
       const g = _g as GameResultExt;
-      g.playerInfos = g.players.map(p => userInfos.get(p.id) as UserInfo);
+      g.playerInfos = g.players.map((p) => userInfos.get(p.id) as UserInfo);
       if (currId) g.thisUser = currId;
       return g;
     });
@@ -81,10 +88,10 @@ export default class MatchHistoryPage extends AListPage {
       this.setContents([
         new Paragraph("No recent games")
           .class("text-xl font-bold")
-          .class(MUTED_TEXT)
+          .class(MUTED_TEXT),
       ]);
     } else {
-      this.setContents(this.games.map(g => new GameCardLarge(g)));
+      this.setContents(this.games.map((g) => new GameCardLarge(g)));
     }
 
     if (this.router.currentPage !== this) {
@@ -93,4 +100,4 @@ export default class MatchHistoryPage extends AListPage {
 
     this.redrawList();
   }
-};
+}

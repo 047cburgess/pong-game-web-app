@@ -2,26 +2,32 @@ import { API, GameResultExt, GameStats, UserInfo } from "../Api";
 import { APP } from "../App";
 import Router, { NavError, Page } from "../Router";
 import {
-  AVATAR_DIV, DEFAULT_BUTTON, HOW_TO_CENTER_A_DIV,
-  MUTED_TEXT, OFFLINE_GRAY, ONLINE_GREEN
+  AVATAR_DIV,
+  DEFAULT_BUTTON,
+  HOW_TO_CENTER_A_DIV,
+  MUTED_TEXT,
+  OFFLINE_GRAY,
+  ONLINE_GREEN,
 } from "./elements/CssUtils";
 import { AElement, Div, Image, Inline, Paragraph } from "./elements/Elements";
 import { GameCardBase, GameCardLarge } from "./elements/GameCard";
-import { ICON_ADD_FRIEND, ICON_CROSSED_SWORDS, ICON_FRIEND_ADDED } from "./elements/SvgIcons";
+import {
+  ICON_ADD_FRIEND,
+  ICON_CROSSED_SWORDS,
+  ICON_FRIEND_ADDED,
+} from "./elements/SvgIcons";
 import { paths as ApiPaths } from "../PublicAPI";
 import { userFromMaybeId } from "../Util";
 
 const TILE_ANIM_KEY1 = ["opacity-0"];
 const TILE_ANIM_KEY2 = ["opacity-100"];
 
-const TILE_STYLES: string
-  = "outline-0 rounded-xl outline-neutral-700 p-4";
+const TILE_STYLES: string = "outline-0 rounded-xl outline-neutral-700 p-4";
 
 export default class DashboardPage extends Page {
   readonly username: string;
 
-  friendState?:
-    "self" | "friend" | "outgoing" | "incoming" | null;
+  friendState?: "self" | "friend" | "outgoing" | "incoming" | null;
 
   userInfo?: UserInfo;
   stats?: GameStats;
@@ -67,49 +73,61 @@ export default class DashboardPage extends Page {
       }
     }
 
-    return [new Div(
-      new Div(...sideLeft)
-        .class("flex flex-col grow lg:max-w-100 gap-2 md:gap-4"),
-      new Div(...sideRight)
-        .class("col-span-2 flex flex-col grow lg:max-w-200 gap-2 md:gap-4"),
-    ).class("gap-2 p-12 min-w-120 max-w-300")
-      .class("grid grid-cols-3 ml-auto mr-auto md:gap-4"),
+    return [
+      new Div(
+        new Div(...sideLeft).class(
+          "flex flex-col grow lg:max-w-100 gap-2 md:gap-4",
+        ),
+        new Div(...sideRight).class(
+          "col-span-2 flex flex-col grow lg:max-w-200 gap-2 md:gap-4",
+        ),
+      )
+        .class("gap-2 p-12 min-w-120 max-w-300")
+        .class("grid grid-cols-3 ml-auto mr-auto md:gap-4"),
     ];
   }
 
   userInfoTile(): Div {
-    let onlineStatus = new Paragraph("Offline").class("col-span-2").class(OFFLINE_GRAY);
-    const lastSeen = this.userInfo?.lastSeen
-      ? Date.parse(this.userInfo.lastSeen) : 0;
+    let onlineStatus = new Paragraph("Offline")
+      .class("col-span-2")
+      .class(OFFLINE_GRAY);
+    const lastSeen =
+      this.userInfo?.lastSeen ? Date.parse(this.userInfo.lastSeen) : 0;
     if (lastSeen + 4 * 60_000 > Date.now()) {
-      onlineStatus = new Paragraph("Online").class("col-span-2").class(ONLINE_GREEN);
+      onlineStatus = new Paragraph("Online")
+        .class("col-span-2")
+        .class(ONLINE_GREEN);
     }
 
-    const registeredSince = this.userInfo?.registeredSince
-      ? Date.parse(this.userInfo.registeredSince).toLocaleString()
+    const registeredSince =
+      this.userInfo?.registeredSince ?
+        Date.parse(this.userInfo.registeredSince).toLocaleString()
       : "...";
 
     const interactButtons: AElement[] = this.interactButtons();
 
     return new Div(
-      new Div(
-        new Image("/api/v1/user/avatars/" + this.username + ".webp")
-      ).class("text-zinc-700/10 bg-zinc-800 mb-4 col-span-2")
+      new Div(new Image("/api/v1/user/avatars/" + this.username + ".webp"))
+        .class("text-zinc-700/10 bg-zinc-800 mb-4 col-span-2")
         .class(AVATAR_DIV),
-      new Div(
-        new Paragraph(this.username).class("font-bold"),
-      ).class("flex flex-row gap-2 text-3xl mb-4 col-span-2"),
+      new Div(new Paragraph(this.username).class("font-bold")).class(
+        "flex flex-row gap-2 text-3xl mb-4 col-span-2",
+      ),
       ...interactButtons,
       onlineStatus,
       new Paragraph("Member since:"),
       new Paragraph(registeredSince).class("text-right font-bold self-end"),
       new Paragraph("Games played:"),
       (this.stats ?
-        new Paragraph(`${this.stats.lifetime.wins
-          + this.stats.lifetime.losses
-          + this.stats.lifetime.draws}`)
-        : new Paragraph("..."))
-        .class("text-right font-bold self-end"),
+        new Paragraph(
+          `${
+            this.stats.lifetime.wins
+            + this.stats.lifetime.losses
+            + this.stats.lifetime.draws
+          }`,
+        )
+      : new Paragraph("...")
+      ).class("text-right font-bold self-end"),
       new Paragraph("Rank:"),
       new Paragraph("Gamer").class("text-right font-bold self-end"),
     )
@@ -120,23 +138,30 @@ export default class DashboardPage extends Page {
   friendsTile(): Div {
     const friendCard = (info: UserInfo, index: number): AElement => {
       const elems = [
-        (info.avatarUrl
-          ? new Div(new Image(info.avatarUrl))
-          : new Div()
-        ).class("w-8 bg-cyan-200")
+        (info.avatarUrl ? new Div(new Image(info.avatarUrl)) : new Div())
+          .class("w-8 bg-cyan-200")
           .class(AVATAR_DIV),
-        new Div().class("h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900"),
+        new Div().class(
+          "h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900",
+        ),
         new Paragraph(info.username).class("self-center font-bold"),
-      ]
-      if (info.lastSeen && Date.parse(info.lastSeen) + 4 * 60_000 > Date.now()) {
+      ];
+      if (
+        info.lastSeen
+        && Date.parse(info.lastSeen) + 4 * 60_000 > Date.now()
+      ) {
         elems[1].class("bg-green-400");
       } else {
         elems[1].class("bg-neutral-400");
       }
       const res = new Div(...elems)
-        .class("transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl")
+        .class(
+          "transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl",
+        )
         .withId(`friend-${index}`)
-        .withOnclick(() => this.router.navigate(`/dashboard?user=${info.username}`));
+        .withOnclick(() =>
+          this.router.navigate(`/dashboard?user=${info.username}`),
+        );
       return res;
     };
 
@@ -146,33 +171,41 @@ export default class DashboardPage extends Page {
     } else if (this.friends === undefined) {
       flist = [];
       for (let i = 0; i < 5; i++) {
-        flist.push((() => {
-          const elems = [
-            new Div().class("aspect-square w-8 bg-neutral-800/50 rounded-full"),
-            new Div().class("h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900"),
-            new Paragraph("•••").class("self-center font-bold text-neutral-700"),
-          ];
-          elems[1].class("bg-neutral-400/10");
-          const res = new Div(...elems)
-            .class("transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl");
-          return res;
-        })());
-      };
+        flist.push(
+          (() => {
+            const elems = [
+              new Div().class(
+                "aspect-square w-8 bg-neutral-800/50 rounded-full",
+              ),
+              new Div().class(
+                "h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900",
+              ),
+              new Paragraph("•••").class(
+                "self-center font-bold text-neutral-700",
+              ),
+            ];
+            elems[1].class("bg-neutral-400/10");
+            const res = new Div(...elems).class(
+              "transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl",
+            );
+            return res;
+          })(),
+        );
+      }
     } else {
       flist = [new Paragraph("No frens found :(").class(MUTED_TEXT)];
     }
 
     const friendsTitle = new Div(
       new Paragraph("Friends →"),
-      new Paragraph(`${this.friends?.length ?? "..."}`)
-    ).class("flex justify-between font-bold text-xl mb-2")
+      new Paragraph(`${this.friends?.length ?? "..."}`),
+    )
+      .class("flex justify-between font-bold text-xl mb-2")
       .withId("friends-list-title")
       .withOnclick(() => this.router.navigate("/friends" + location.search));
 
-    return new Div(
-      friendsTitle,
-      ...flist,
-    ).class("flex flex-col gap-2 select-none")
+    return new Div(friendsTitle, ...flist)
+      .class("flex flex-col gap-2 select-none")
       .withId("tile-friends") as Div;
   }
 
@@ -181,15 +214,15 @@ export default class DashboardPage extends Page {
     if (!this.recentGames) {
       for (let i = 0; i < 5; i++) {
         const c = new GameCardBase() as Div;
-        c.contents = [new Paragraph("Loading...")
-          .class("self-center")
-        ];
+        c.contents = [new Paragraph("Loading...").class("self-center")];
         c.class("outline-neutral-800 text-neutral-700 text-xl font-bold");
         cards.push(c);
-      };
+      }
     } else if (this.recentGames.length === 0) {
       const c = new GameCardBase() as Div;
-      c.contents = [new Paragraph("No recent games").class("self-center").class(MUTED_TEXT)];
+      c.contents = [
+        new Paragraph("No recent games").class("self-center").class(MUTED_TEXT),
+      ];
       c.class("outline-neutral-700 bg-zinc-800/75 text-xl font-bold");
       cards.push(c);
     } else {
@@ -198,7 +231,7 @@ export default class DashboardPage extends Page {
         cards.push(
           new GameCardLarge(gg)
             .withOnclick(() => this.router.navigate(`/games?id=${gg.id}`))
-            .withId(`game-card-${i}`)
+            .withId(`game-card-${i}`),
         );
       }
     }
@@ -222,23 +255,33 @@ export default class DashboardPage extends Page {
         .class("h-10")
         .withOnclick(navGameHistory)
         .withId("see-all-btn");
-      (seeAll as Div).contents
-        = [new Paragraph("See all").class("self-center font-bold")];
+      (seeAll as Div).contents = [
+        new Paragraph("See all").class("self-center font-bold"),
+      ];
     }
 
     let stats = new Div(
-      new Paragraph(`Wins: <span class="text-white">${this.stats?.lifetime.wins ?? ".."}</span>`),
-      new Paragraph(`Draws: <span class="text-white">${this.stats?.lifetime.losses ?? ".."}</span>`),
-      new Paragraph(`Losses: <span class="text-white">${this.stats?.lifetime.draws ?? ".."}</span>`),
+      new Paragraph(
+        `Wins: <span class="text-white">${this.stats?.lifetime.wins ?? ".."}</span>`,
+      ),
+      new Paragraph(
+        `Draws: <span class="text-white">${this.stats?.lifetime.losses ?? ".."}</span>`,
+      ),
+      new Paragraph(
+        `Losses: <span class="text-white">${this.stats?.lifetime.draws ?? ".."}</span>`,
+      ),
     );
     return new Div(
       new Div(
         historyTitle,
-        stats.class("hidden md:flex flex-row justify-end gap-4 text-neutral-500"),
+        stats.class(
+          "hidden md:flex flex-row justify-end gap-4 text-neutral-500",
+        ),
       ).class("flex flex-row gap-4 justify-between font-bold text-xl mb-2"),
       ...cards,
-      seeAll
-    ).class("flex flex-col gap-2 md:gap-4")
+      seeAll,
+    )
+      .class("flex flex-col gap-2 md:gap-4")
       .withId("tile-match-history") as Div;
   }
 
@@ -269,7 +312,8 @@ export default class DashboardPage extends Page {
           new Div(
             new Inline(ICON_ADD_FRIEND).class("self-center"),
             new Paragraph("Add friend").class("self-center"),
-          ).class("grow")
+          )
+            .class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
@@ -278,7 +322,7 @@ export default class DashboardPage extends Page {
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withId("invite-to-play-btn")
+            .withId("invite-to-play-btn"),
         ];
         break;
       case "self":
@@ -286,7 +330,8 @@ export default class DashboardPage extends Page {
           new Div(
             // todo: setting button icon
             new Paragraph("Edit profile").class("self-center"),
-          ).class("grow")
+          )
+            .class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
@@ -299,7 +344,8 @@ export default class DashboardPage extends Page {
           new Div(
             new Inline(ICON_FRIEND_ADDED).class("self-center"),
             new Paragraph("Request sent").class("self-center"),
-          ).class("grow")
+          )
+            .class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
@@ -308,7 +354,7 @@ export default class DashboardPage extends Page {
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withId("invite-to-play-btn")
+            .withId("invite-to-play-btn"),
         ];
         break;
       case undefined:
@@ -317,7 +363,8 @@ export default class DashboardPage extends Page {
           new Div(
             new Inline(ICON_CROSSED_SWORDS).class("self-center"),
             new Paragraph("Invite to play").class("self-center"),
-          ).class("grow")
+          )
+            .class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
@@ -335,24 +382,44 @@ export default class DashboardPage extends Page {
   }
 
   transitionIn(): null | void {
-    ["delay-25", "delay-50", "delay-75",
-      "delay-100", "delay-200", "delay-300",
-      "delay-125", "delay-225", "delay-325",
-      "delay-150", "delay-250", "delay-350",
-      "delay-175", "delay-275", "delay-375",];
+    [
+      "delay-25",
+      "delay-50",
+      "delay-75",
+      "delay-100",
+      "delay-200",
+      "delay-300",
+      "delay-125",
+      "delay-225",
+      "delay-325",
+      "delay-150",
+      "delay-250",
+      "delay-350",
+      "delay-175",
+      "delay-275",
+      "delay-375",
+    ];
 
-    this.tiles?.forEach((t, i) => t.byId()?.classList.add(
-      "transition", "ease-in-out", "duration-900",
-      `delay-${i * 50 + 150}`,
-      ...TILE_ANIM_KEY1
-    ));
+    this.tiles?.forEach((t, i) =>
+      t
+        .byId()
+        ?.classList.add(
+          "transition",
+          "ease-in-out",
+          "duration-900",
+          `delay-${i * 50 + 150}`,
+          ...TILE_ANIM_KEY1,
+        ),
+    );
 
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      this.tiles?.forEach((t) => {
-        t.byId()?.classList.remove(...TILE_ANIM_KEY1);
-        t.byId()?.classList.add(...TILE_ANIM_KEY2);
-      });
-    }));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        this.tiles?.forEach((t) => {
+          t.byId()?.classList.remove(...TILE_ANIM_KEY1);
+          t.byId()?.classList.add(...TILE_ANIM_KEY2);
+        });
+      }),
+    );
   }
 
   async loadData(): Promise<void> {
@@ -362,14 +429,13 @@ export default class DashboardPage extends Page {
     }
     path = "/user";
 
-    const thenJson =
-      (x: Promise<Response>) => x.then(async r => await r.json())
-        .catch(console.error);
+    const thenJson = (x: Promise<Response>) =>
+      x.then(async (r) => await r.json()).catch(console.error);
 
     const [resp, friends, stats] = await Promise.all([
       API.fetch(path),
       thenJson(API.fetch(`${path}/friends`)),
-      thenJson(API.fetch(`${path}/stats`))
+      thenJson(API.fetch(`${path}/stats`)),
     ]);
 
     if (resp.status === 401) {
@@ -385,30 +451,32 @@ export default class DashboardPage extends Page {
       return;
     }
 
-    const userInfo = await resp.json().catch(console.error) as
-      void | ApiPaths["/users/{username}"]["get"]["responses"]["200"]["content"]["application/json"];
+    const userInfo = (await resp.json().catch(console.error)) as
+      | void
+      | ApiPaths["/users/{username}"]["get"]["responses"]["200"]["content"]["application/json"];
     if (!userInfo) {
       return;
     }
     this.userInfo = userInfo;
-    this.friends = friends as
-      ApiPaths["/users/{username}/friends"]["get"]["responses"]["200"]["content"]["application/json"];
-    this.stats = stats as
-      ApiPaths["/users/{username}/stats"]["get"]["responses"]["200"]["content"]["application/json"];
+    this.friends =
+      friends as ApiPaths["/users/{username}/friends"]["get"]["responses"]["200"]["content"]["application/json"];
+    this.stats =
+      stats as ApiPaths["/users/{username}/stats"]["get"]["responses"]["200"]["content"]["application/json"];
 
-    const ids = new Set(this.stats.recentMatches
-      .flatMap(x => x.players)
-      .map(x => x.id));
+    const ids = new Set(
+      this.stats.recentMatches.flatMap((x) => x.players).map((x) => x.id),
+    );
     let proms = [];
     const userInfos: Map<number | string, UserInfo> = new Map();
     for (const id of ids) {
-      proms.push(userFromMaybeId(id).then(info => userInfos.set(id, info)));
+      proms.push(userFromMaybeId(id).then((info) => userInfos.set(id, info)));
     }
     await Promise.all(proms);
 
-    this.recentGames = this.stats.recentMatches.map(g => {
-      (g as GameResultExt).playerInfos
-        = g.players.map(p => userInfos.get(p.id)) as UserInfo[];
+    this.recentGames = this.stats.recentMatches.map((g) => {
+      (g as GameResultExt).playerInfos = g.players.map((p) =>
+        userInfos.get(p.id),
+      ) as UserInfo[];
       (g as GameResultExt).thisUser = this.userInfo?.id;
       return g as GameResultExt;
     });
@@ -421,4 +489,4 @@ export default class DashboardPage extends Page {
     this.friendsTile().redrawInner();
     this.matchHistoryTile().redrawInner();
   }
-};
+}

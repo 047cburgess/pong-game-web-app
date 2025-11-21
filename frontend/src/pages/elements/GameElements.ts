@@ -5,9 +5,14 @@ export class PlayerAvatar extends AContainer {
   playerName: string;
   scoreId: string;
   color: string;
-  align: 'left' | 'right';
+  align: "left" | "right";
 
-  constructor(playerName: string, scoreId: string, color: string, align: 'left' | 'right' = 'left') {
+  constructor(
+    playerName: string,
+    scoreId: string,
+    color: string,
+    align: "left" | "right" = "left",
+  ) {
     super();
     this.playerName = playerName;
     this.scoreId = scoreId;
@@ -19,17 +24,20 @@ export class PlayerAvatar extends AContainer {
     const avatar = new Div()
       .class("w-10 h-10 min-w-10 min-h-10")
       .class(AVATAR_DIV)
-      .withStyle(`background: ${this.color}; outline: 2px solid ${this.color};`);
+      .withStyle(
+        `background: ${this.color}; outline: 2px solid ${this.color};`,
+      );
 
-    const nameText = new Paragraph(this.playerName)
-      .class("font-bold text-white");
+    const nameText = new Paragraph(this.playerName).class(
+      "font-bold text-white",
+    );
 
     const scoreText = new Paragraph("0")
       .withId(this.scoreId)
       .class("text-2xl font-bold")
       .withStyle(`color: ${this.color};`);
 
-    if (this.align === 'left') {
+    if (this.align === "left") {
       const textContainer = new Div(nameText, scoreText);
 
       return new Div(avatar, textContainer)
@@ -51,7 +59,7 @@ export class PlayerAvatar extends AContainer {
 export class GameTimer extends AElement {
   constructor() {
     super();
-    this.id = 'game-timer';
+    this.id = "game-timer";
   }
 
   render(): string {
@@ -75,11 +83,11 @@ export class GameHUD extends AElement {
 
   render(): string {
     const columns: string[] = [
-      '<div></div>',
-      '<div></div>',
-      '<div></div>',
-      '<div></div>',
-      '<div></div>'
+      "<div></div>",
+      "<div></div>",
+      "<div></div>",
+      "<div></div>",
+      "<div></div>",
     ];
 
     columns[2] = this.timer.render();
@@ -101,7 +109,7 @@ export class GameHUD extends AElement {
       columns[4] = this.players[2].render();
     }
 
-    return `<div class="grid items-center gap-4" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;" ${this.genTags()}>${columns.join('')}</div>`;
+    return `<div class="grid items-center gap-4" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;" ${this.genTags()}>${columns.join("")}</div>`;
   }
 }
 

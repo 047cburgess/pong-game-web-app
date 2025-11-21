@@ -4,7 +4,11 @@ import Router, { Page } from "../Router";
 import { Div, AElement, Textbox, Paragraph, Button } from "./elements/Elements";
 import { paths as ApiPaths } from "../PublicAPI";
 import { HOW_TO_CENTER_A_DIV, INPUT_BOX_OUTLINE } from "./elements/CssUtils";
-import { emailValidator, passwordValidator, usernameValidator } from "../FieldValidators";
+import {
+  emailValidator,
+  passwordValidator,
+  usernameValidator,
+} from "../FieldValidators";
 
 export default class RegisterPage extends Page {
   readonly userText = new Textbox("username");
@@ -20,8 +24,11 @@ export default class RegisterPage extends Page {
     this.loggedOn = !!APP.userInfo;
 
     this.regButton = new Button(
-      new Paragraph("Sign up →").class("text-2xl p-2 select-none self-center text-center")
-    ).class(HOW_TO_CENTER_A_DIV)
+      new Paragraph("Sign up →").class(
+        "text-2xl p-2 select-none self-center text-center",
+      ),
+    )
+      .class(HOW_TO_CENTER_A_DIV)
       .class("flex")
       .withOnclick(this.trySignup.bind(this))
       .withId("sign-in-btn") as Button;
@@ -32,8 +39,12 @@ export default class RegisterPage extends Page {
     const email = (this.emailText.byId() as HTMLInputElement).value;
     const pass = (this.passText.byId() as HTMLInputElement).value;
 
-    if (emailValidator(email) !== null || usernameValidator(username) !== null
-      || passwordValidator(pass) !== null || pass !== (this.passText2.byId() as HTMLInputElement).value) {
+    if (
+      emailValidator(email) !== null
+      || usernameValidator(username) !== null
+      || passwordValidator(pass) !== null
+      || pass !== (this.passText2.byId() as HTMLInputElement).value
+    ) {
       alert("Please ensure you've entered valid values in all fields");
       return;
     }
@@ -64,8 +75,9 @@ export default class RegisterPage extends Page {
     resp = await API.fetch("/user");
     let body;
     if (resp.ok || resp.status === 304) {
-      body = await resp.json().catch(console.error) as void |
-        ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
+      body = (await resp.json().catch(console.error)) as
+        | void
+        | ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
     }
     if (body) {
       APP.onLogin(body);
@@ -80,11 +92,13 @@ export default class RegisterPage extends Page {
       new Div(
         new Paragraph("Join the").class("font-normal -mb-4"),
         new Paragraph("LIBFT_TRANSCENDENCE").class("text-4xl"),
-        new Paragraph("The future of Pong is now.").class("font-normal pb-4 -mt-2"),
+        new Paragraph("The future of Pong is now.").class(
+          "font-normal pb-4 -mt-2",
+        ),
         new Div(
           new Paragraph("Username:").class("text-xl").withId("username-label"),
           this.userText
-            .withOnkeydown(e => {
+            .withOnkeydown((e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 this.emailText.byId()?.focus();
@@ -96,11 +110,13 @@ export default class RegisterPage extends Page {
             .class(INPUT_BOX_OUTLINE)
             .class("transition duration-200 ease-in-out"),
           this.errorsDiv(this.userText),
-        ).withId("username-area").withOnclick(() => this.userText.byId()?.focus()),
+        )
+          .withId("username-area")
+          .withOnclick(() => this.userText.byId()?.focus()),
         new Div(
           new Paragraph("Email:").class("text-xl").withId("email-label"),
           this.emailText
-            .withOnkeydown(e => {
+            .withOnkeydown((e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 this.passText.byId()?.focus();
@@ -108,13 +124,17 @@ export default class RegisterPage extends Page {
             })
             .withValidator(emailValidator)
             .postValidation(() => this.errorsDiv(this.emailText).redrawInner())
-            .class("rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2"),
+            .class(
+              "rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2",
+            ),
           this.errorsDiv(this.emailText),
-        ).withId("email-area").withOnclick(() => this.emailText.byId()?.focus()),
+        )
+          .withId("email-area")
+          .withOnclick(() => this.emailText.byId()?.focus()),
         new Div(
           new Paragraph("Password:").class("text-xl").withId("password-label"),
           this.passText
-            .withOnkeydown(e => {
+            .withOnkeydown((e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 this.passText2.byId()?.focus();
@@ -123,39 +143,51 @@ export default class RegisterPage extends Page {
             .withValidator(passwordValidator)
             .withValidator(() => (this.passText2.runValidators(), null))
             .postValidation(() => this.errorsDiv(this.passText).redrawInner())
-            .class("rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2"),
+            .class(
+              "rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2",
+            ),
           this.errorsDiv(this.passText),
-        ).withId("password-area").withOnclick(() => this.passText.byId()?.focus()),
+        )
+          .withId("password-area")
+          .withOnclick(() => this.passText.byId()?.focus()),
         new Div(
-          new Paragraph("Repeat password:").class("text-xl").withId("password2-label"),
+          new Paragraph("Repeat password:")
+            .class("text-xl")
+            .withId("password2-label"),
           this.passText2
-            .withOnkeydown(e => {
+            .withOnkeydown((e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 this.trySignup();
               }
             })
-            .withValidator(val => {
-              const other = (this.passText.byId() as HTMLInputElement | null)?.value;
+            .withValidator((val) => {
+              const other = (this.passText.byId() as HTMLInputElement | null)
+                ?.value;
               if (val && val !== other) {
                 return ["Passwords don't match"];
               }
               return null;
             })
             .postValidation(() => this.errorsDiv(this.passText2).redrawInner())
-            .class("rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2"),
+            .class(
+              "rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2",
+            ),
           this.errorsDiv(this.passText2),
-        ).withId("password2-area").withOnclick(() => this.passText2.byId()?.focus()),
+        )
+          .withId("password2-area")
+          .withOnclick(() => this.passText2.byId()?.focus()),
         this.regButton,
-      ).class("absolute top-1/2 left-1/2 transform")
+      )
+        .class("absolute top-1/2 left-1/2 transform")
         .class("-translate-y-1/2 -translate-x-1/2")
         .class("flex flex-col gap-2 pb-2 font-bold select-none")
-        .class(HOW_TO_CENTER_A_DIV)
+        .class(HOW_TO_CENTER_A_DIV),
     ];
   }
 
   bindEvents(): void {
-    this.content().forEach(x => x.bindEvents());
+    this.content().forEach((x) => x.bindEvents());
   }
 
   async loadData(): Promise<void> {
@@ -166,8 +198,9 @@ export default class RegisterPage extends Page {
     const resp = await API.fetch("/user");
     let body;
     if (resp.ok || resp.status === 304) {
-      body = await resp.json().catch(console.error) as void |
-        ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
+      body = (await resp.json().catch(console.error)) as
+        | void
+        | ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
     }
     if (body) {
       APP.onLogin(await resp.json());
@@ -178,8 +211,9 @@ export default class RegisterPage extends Page {
   errorsDiv(elem: Textbox) {
     const res = new Div();
     res.withId(elem.id + "-errdiv");
-    new Set(elem.validationErrors ?? [])
-      .forEach(e => res.contents.push(new Paragraph("• " + e).class("text-red-500")));
+    new Set(elem.validationErrors ?? []).forEach((e) =>
+      res.contents.push(new Paragraph("• " + e).class("text-red-500")),
+    );
     return res;
   }
 }

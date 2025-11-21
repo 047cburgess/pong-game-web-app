@@ -1,7 +1,15 @@
 import {
-  Engine, Scene, ArcRotateCamera, Vector3,
-  HemisphericLight, Mesh, MeshBuilder,
-  Camera, Vector2, StandardMaterial, Color3,
+  Engine,
+  Scene,
+  ArcRotateCamera,
+  Vector3,
+  HemisphericLight,
+  Mesh,
+  MeshBuilder,
+  Camera,
+  Vector2,
+  StandardMaterial,
+  Color3,
   KeyboardEventTypes,
   BloomEffect,
 } from "@babylonjs/core";
@@ -27,28 +35,28 @@ type GameParams = {
 };
 
 export type PlayerInput = {
-  seq: number,
-  time: number,
-  up: boolean,
-  down: boolean,
+  seq: number;
+  time: number;
+  up: boolean;
+  down: boolean;
 };
 type PlayerState = {
-  pos: number,
-  vel: number,
-  health: number,
-  score: number,
-  hitBy?: number,
+  pos: number;
+  vel: number;
+  health: number;
+  score: number;
+  hitBy?: number;
 };
 type GameState = {
-  pauseCd: number,  // Number of ticks remaining in countdown
-  tick: number,
-  time: number,
-  players: PlayerState[],
+  pauseCd: number; // Number of ticks remaining in countdown
+  tick: number;
+  time: number;
+  players: PlayerState[];
   ball: {
-    pos: Vector2,
-    vel: Vector2,
-    lastRefl?: number,
-  },
+    pos: Vector2;
+    vel: Vector2;
+    lastRefl?: number;
+  };
 };
 
 const lerp = (a: number, b: number, l: number): number => {
@@ -56,10 +64,10 @@ const lerp = (a: number, b: number, l: number): number => {
 };
 
 type PlayerController = {
-  upKey: string,
-  downKey: string,
-  state: PlayerInput,
-  ws: WebSocket,
+  upKey: string;
+  downKey: string;
+  state: PlayerInput;
+  ws: WebSocket;
 };
 
 export class PongApp {
@@ -96,21 +104,35 @@ export class PongApp {
   player4?: PlayerController;
 
   // takes base address, join token, their userid (if registered), then up to 3 other tokens for guests
-  constructor(addr: string, token: string, userId?: number, t2?: string, t3?: string, t4?: string) {
+  constructor(
+    addr: string,
+    token: string,
+    userId?: number,
+    t2?: string,
+    t3?: string,
+    t4?: string,
+  ) {
     this.isViewer = token.startsWith("view_");
     if (this.isViewer) {
       console.log("Entered babylon constructor: viewer");
     }
     this.myUserId = userId;
     this.isLocal = !!(t2 || t3 || t4);
-    this.isLocal ? console.log("Babylon constructor: local game") : console.log("Babylon constructor: online game");
+    this.isLocal ?
+      console.log("Babylon constructor: local game")
+    : console.log("Babylon constructor: online game");
 
-    // ADDED TO SENT THEIR USERID 
-    const wsUrl = userId ? `${addr}?token=${token}&userId=${userId}` : `${addr}?token=${token}`;
+    // ADDED TO SENT THEIR USERID
+    const wsUrl =
+      userId ?
+        `${addr}?token=${token}&userId=${userId}`
+      : `${addr}?token=${token}`;
     console.log(wsUrl);
     this.sock = new WebSocket(wsUrl);
 
-    const canvas = document.getElementById("gameCanvas") as any as HTMLCanvasElement;
+    const canvas = document.getElementById(
+      "gameCanvas",
+    ) as any as HTMLCanvasElement;
 
     this.canvas = canvas;
 
@@ -118,8 +140,8 @@ export class PongApp {
     this.scene = new Scene(this.engine);
 
     this.player1 = {
-      upKey: 's',
-      downKey: 'w',
+      upKey: "s",
+      downKey: "w",
       state: {
         down: false,
         up: false,
@@ -134,8 +156,8 @@ export class PongApp {
       console.log(`${addr}?token=${t2}`);
       const sock2 = new WebSocket(`${addr}?token=${t2}`);
       this.player2 = {
-        upKey: 'u',
-        downKey: 'j',
+        upKey: "u",
+        downKey: "j",
         state: {
           down: false,
           up: false,
@@ -158,7 +180,7 @@ export class PongApp {
           seq: -1,
           time: Date.now(),
         },
-        ws: q
+        ws: q,
       };
     }
     if (t4) {
@@ -173,7 +195,7 @@ export class PongApp {
           seq: -1,
           time: Date.now(),
         },
-        ws: q
+        ws: q,
       };
     }
 
@@ -182,53 +204,75 @@ export class PongApp {
     // ADDED: ONLY IF IT'S A PLAYER SET UP THE KEY EVENTS
     if (!this.isViewer) {
       this.scene.onKeyboardObservable.add((kbInfo) => {
-        [this.player1, this.player2, this.player3, this.player4].forEach((p) => {
-          if (!p) return;
-          switch (kbInfo.type) {
-            case KeyboardEventTypes.KEYDOWN:
-              switch (kbInfo.event.key) {
-                case p.downKey:
-                  p.state.down = true;
-                  break;
-                case p.upKey:
-                  p.state.up = true;
-                  break;
-              }
-              break;
-            case KeyboardEventTypes.KEYUP:
-              switch (kbInfo.event.key) {
-                case p.downKey:
-                  p.state.down = false;
-                  break;
-                case p.upKey:
-                  p.state.up = false;
-                  break;
-              }
-              break;
-          }
-        });
+        [this.player1, this.player2, this.player3, this.player4].forEach(
+          (p) => {
+            if (!p) return;
+            switch (kbInfo.type) {
+              case KeyboardEventTypes.KEYDOWN:
+                switch (kbInfo.event.key) {
+                  case p.downKey:
+                    p.state.down = true;
+                    break;
+                  case p.upKey:
+                    p.state.up = true;
+                    break;
+                }
+                break;
+              case KeyboardEventTypes.KEYUP:
+                switch (kbInfo.event.key) {
+                  case p.downKey:
+                    p.state.down = false;
+                    break;
+                  case p.upKey:
+                    p.state.up = false;
+                    break;
+                }
+                break;
+            }
+          },
+        );
       });
     }
 
     this.camera = new ArcRotateCamera(
-      "Camera", Math.PI / 4, Math.PI / 4, 32, Vector3.Zero(), this.scene);
+      "Camera",
+      Math.PI / 4,
+      Math.PI / 4,
+      32,
+      Vector3.Zero(),
+      this.scene,
+    );
     this.camera.attachControl(this.canvas, true);
 
-    this.light = new HemisphericLight("light", new Vector3(0.12, 0.78, 0.33), this.scene);
+    this.light = new HemisphericLight(
+      "light",
+      new Vector3(0.12, 0.78, 0.33),
+      this.scene,
+    );
 
-    this.ball = MeshBuilder.CreateSphere("ball", { diameter: BALL_RADIUS * 2 }, this.scene);
+    this.ball = MeshBuilder.CreateSphere(
+      "ball",
+      { diameter: BALL_RADIUS * 2 },
+      this.scene,
+    );
     this.ball.material = new StandardMaterial("ballMaterial");
-    (this.ball.material as StandardMaterial).specularColor = new Color3(0.1, 0.1, 0.1);
+    (this.ball.material as StandardMaterial).specularColor = new Color3(
+      0.1,
+      0.1,
+      0.1,
+    );
 
-    this.ground = MeshBuilder.CreatePlane("ground", {
-      width: BALL_RADIUS * 2 + FIELD_HALFSIZE * 2 / DOWNSCALE,
-      height: BALL_RADIUS * 2 + FIELD_HALFSIZE * 2 / DOWNSCALE,
-    }, this.scene);
+    this.ground = MeshBuilder.CreatePlane(
+      "ground",
+      {
+        width: BALL_RADIUS * 2 + (FIELD_HALFSIZE * 2) / DOWNSCALE,
+        height: BALL_RADIUS * 2 + (FIELD_HALFSIZE * 2) / DOWNSCALE,
+      },
+      this.scene,
+    );
     this.ground.position.y = -BALL_RADIUS;
     this.ground.rotate(new Vector3(1, 0, 0), Math.PI / 2);
-    const groundMat = new StandardMaterial(
-      "ground_mat", this.scene, false
-    );
+    const groundMat = new StandardMaterial("ground_mat", this.scene, false);
     groundMat.diffuseColor = new Color3(0.25, 0.25, 0.25);
     groundMat.specularColor = new Color3(0.15, 0.15, 0.15);
     this.ground.material = groundMat;
@@ -239,7 +283,7 @@ export class PongApp {
       this.walls.push(wall);
       wall.material = this.ground.material;
       if (i % 2 === 0) {
-        wall.scaling.x = FIELD_HALFSIZE * 2 / DOWNSCALE + 1 + 2 * BALL_RADIUS;
+        wall.scaling.x = (FIELD_HALFSIZE * 2) / DOWNSCALE + 1 + 2 * BALL_RADIUS;
         wall.position.x += 0.5;
         wall.position.z = FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS;
         if (i === 0) {
@@ -247,7 +291,7 @@ export class PongApp {
           wall.position.x *= -1;
         }
       } else {
-        wall.scaling.z = FIELD_HALFSIZE * 2 / DOWNSCALE + 1 + 2 * BALL_RADIUS;
+        wall.scaling.z = (FIELD_HALFSIZE * 2) / DOWNSCALE + 1 + 2 * BALL_RADIUS;
         wall.position.z += 0.5;
         wall.position.x = FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS;
         if (i === 1) {
@@ -278,37 +322,49 @@ export class PongApp {
         const debugtext = document.getElementById("debugtext");
         if (debugtext) {
           // Show scores for all players
-          const scores = this.gameState.players.map(p => p.score).join('  ');
+          const scores = this.gameState.players.map((p) => p.score).join("  ");
           // show count down
           if (this.gameState.pauseCd > 0) {
-            const countdownSeconds = Math.ceil(this.gameState.pauseCd * this.params.tickMs / 1000);
+            const countdownSeconds = Math.ceil(
+              (this.gameState.pauseCd * this.params.tickMs) / 1000,
+            );
             debugtext.textContent = `${scores}  |  ${countdownSeconds}`;
           } else {
             debugtext.textContent = `${scores}  |  ${Math.floor(this.gameState.time / 1000)}`;
           }
         }
         if (typeof this.prevState.ball.lastRefl === "number") {
-          (this.ball.material as StandardMaterial).diffuseColor
-            = PLAYER_COLORS[this.prevState.ball.lastRefl];
+          (this.ball.material as StandardMaterial).diffuseColor =
+            PLAYER_COLORS[this.prevState.ball.lastRefl];
         }
-        const avgTime = this.tickAvg.reduce((p, c) => p + c, 0) / this.tickAvg.length;
+        const avgTime =
+          this.tickAvg.reduce((p, c) => p + c, 0) / this.tickAvg.length;
         const lt = Date.now();
         const dt = Math.min(4, (lt - this.lastTime) / avgTime);
         if (!dt) {
           return;
         }
-        let x = lerp(this.prevState.ball.pos.x + this.prevState.ball.vel.x * dt,
-          this.gameState.ball.pos.x + this.gameState.ball.vel.x * (dt - 1), dt);
-        let y = lerp(this.prevState.ball.pos.y + this.prevState.ball.vel.y * dt,
-          this.gameState.ball.pos.y + this.gameState.ball.vel.y * (dt - 1), dt);
+        let x = lerp(
+          this.prevState.ball.pos.x + this.prevState.ball.vel.x * dt,
+          this.gameState.ball.pos.x + this.gameState.ball.vel.x * (dt - 1),
+          dt,
+        );
+        let y = lerp(
+          this.prevState.ball.pos.y + this.prevState.ball.vel.y * dt,
+          this.gameState.ball.pos.y + this.gameState.ball.vel.y * (dt - 1),
+          dt,
+        );
         this.ball.position.x = x / DOWNSCALE;
         this.ball.position.z = y / DOWNSCALE;
         for (let i = 0; i < this.params.nPlayers; i++) {
           // TODO(vaiva)
           const ppl = this.prevState.players[i];
           const cpl = this.gameState.players[i];
-          const pos = lerp(ppl.pos + ppl.vel * dt,
-            cpl.pos + cpl.vel * (dt - 1), dt);
+          const pos = lerp(
+            ppl.pos + ppl.vel * dt,
+            cpl.pos + cpl.vel * (dt - 1),
+            dt,
+          );
           if (i <= 1) {
             this.paddles[i].position.z = pos / DOWNSCALE;
             if (i === 1) {
@@ -320,17 +376,19 @@ export class PongApp {
               this.paddles[i].position.x *= -1;
             }
           }
-          (this.walls[i].material as StandardMaterial).diffuseColor
-            = Color3.Lerp((this.walls[i].material as StandardMaterial).diffuseColor,
-              new Color3(0.25, 0.25, 0.25), 0.1);
-          if (typeof ppl.hitBy === 'number') {
+          (this.walls[i].material as StandardMaterial).diffuseColor =
+            Color3.Lerp(
+              (this.walls[i].material as StandardMaterial).diffuseColor,
+              new Color3(0.25, 0.25, 0.25),
+              0.1,
+            );
+          if (typeof ppl.hitBy === "number") {
             let color = PLAYER_COLORS[ppl.hitBy];
             // red flash for own goals (any player hit their own wall)
             if (ppl.hitBy === i) {
               color = Color3.Red();
             }
-            (this.walls[i].material as StandardMaterial).diffuseColor
-              = color;
+            (this.walls[i].material as StandardMaterial).diffuseColor = color;
           }
         }
       }
@@ -355,7 +413,8 @@ export class PongApp {
       });
       // update UI to show who's in the game
       this.updatePlayerListUI();
-    } else if (msg.type === "game_join") { // for yourself joining
+    } else if (msg.type === "game_join") {
+      // for yourself joining
       this.params = msg.params;
       this.tickAvg.fill(this.params.tickMs, 0, 12);
 
@@ -384,21 +443,29 @@ export class PongApp {
             paddle.scaling.z = this.params.paddleSize / DOWNSCALE;
             paddle.scaling.y = 1.05;
             paddle.scaling.x = 1.05;
-            paddle.position.x = -(FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS);
+            paddle.position.x = -(
+              FIELD_HALFSIZE / DOWNSCALE
+              + 0.5
+              + BALL_RADIUS
+            );
             break;
           case 2:
             paddle.scaling.x = this.params.paddleSize / DOWNSCALE;
             paddle.scaling.y = 1.05;
             paddle.scaling.z = 1.05;
-            paddle.position.z = (FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS);
+            paddle.position.z = FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS;
             break;
           case 3:
             paddle.scaling.x = this.params.paddleSize / DOWNSCALE;
             paddle.scaling.y = 1.05;
             paddle.scaling.z = 1.05;
-            paddle.position.z = -(FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS);
+            paddle.position.z = -(
+              FIELD_HALFSIZE / DOWNSCALE
+              + 0.5
+              + BALL_RADIUS
+            );
             break;
-        };
+        }
         this.paddles.push(paddle);
       }
 
@@ -435,7 +502,6 @@ export class PongApp {
         debugtext.textContent = "Game Abandoned: " + msg.reason;
         debugtext.style.color = "#ff9800";
       }
-
     } else {
       console.log("[WARN]: Unknown msg", msg);
     }
@@ -447,13 +513,15 @@ export class PongApp {
       0: 0, // No rotation needed
       1: Math.PI, // 180
       2: Math.PI / 2, // +90
-      3: (3 * Math.PI) / 2 // -90
+      3: (3 * Math.PI) / 2, // -90
     };
 
     const rotation = rotations[pid as keyof typeof rotations];
     if (rotation !== undefined && rotation !== 0) {
       (this.camera as ArcRotateCamera).alpha += rotation;
-      console.log(`Camera rotated ${(rotation * 180 / Math.PI).toFixed(0)} dgs for player ${pid}`);
+      console.log(
+        `Camera rotated ${((rotation * 180) / Math.PI).toFixed(0)} dgs for player ${pid}`,
+      );
     }
   }
 
@@ -472,20 +540,20 @@ export class PongApp {
       const rgb = `rgb(${Math.floor(color.r * 255)}, ${Math.floor(color.g * 255)}, ${Math.floor(color.b * 255)})`;
 
       // Key bindings for each player
-      let keyBinding = '';
+      let keyBinding = "";
       if (this.isLocal) {
         const localKeyBindings = [
-          '(W/S)',   // Player 1
-          '(J/U)',   // Player 2
-          '(T/Y)',   // Player 3
-          '(V/B)'    // Player 4
+          "(W/S)", // Player 1
+          "(J/U)", // Player 2
+          "(T/Y)", // Player 3
+          "(V/B)", // Player 4
         ];
         keyBinding = localKeyBindings[i];
       } else {
-        keyBinding = '(W/S)';
+        keyBinding = "(W/S)";
       }
 
-      let playerInfo = '';
+      let playerInfo = "";
       if (userId !== undefined) {
         // Player connected
         if (userId === null) {
@@ -504,11 +572,11 @@ export class PongApp {
           <div style="width: 20px; height: 20px; background: ${rgb}; margin-right: 10px; border: 1px solid #666;"></div>
           <span style="min-width: 200px;">${playerInfo}</span>
           <span style="font-weight: bold; margin-left: 20px;">Score: ${score}</span>
-        </div>`
+        </div>`,
       );
     }
 
-    playerListEl.innerHTML = playerRows.join('');
+    playerListEl.innerHTML = playerRows.join("");
   }
 
   dispose() {
@@ -517,8 +585,11 @@ export class PongApp {
     // Close ws connections
     [this.sock, this.player2?.ws, this.player3?.ws, this.player4?.ws]
       .filter((ws): ws is WebSocket => ws !== undefined)
-      .forEach(ws => {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      .forEach((ws) => {
+        if (
+          ws.readyState === WebSocket.OPEN
+          || ws.readyState === WebSocket.CONNECTING
+        ) {
           ws.close();
         }
       });

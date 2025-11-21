@@ -1,11 +1,21 @@
 // TODO: Handle when click back in browser during game then go back in -> 2 games as once and buggy
 // TODO: Check usage of the router APP calls -> not currently doing it properly. Schemas.
 
-
 import { APP } from "../App";
 import Router, { NavError, Page } from "../Router";
-import { AElement, Div, Paragraph, Button, Header, Inline } from "./elements/Elements";
-import { DEFAULT_BUTTON, TIMER_COUNTDOWN, TIMER_NORMAL } from "./elements/CssUtils";
+import {
+  AElement,
+  Div,
+  Paragraph,
+  Button,
+  Header,
+  Inline,
+} from "./elements/Elements";
+import {
+  DEFAULT_BUTTON,
+  TIMER_COUNTDOWN,
+  TIMER_NORMAL,
+} from "./elements/CssUtils";
 import { PongApp } from "../game/PongGame";
 import { PlayerAvatar, GameHUD, ColoredText } from "./elements/GameElements";
 
@@ -13,10 +23,10 @@ type GameState = "setup" | "waiting" | "playing" | "finished";
 
 // Player colours matching paddle colours
 const PLAYER_COLOURS = [
-  'rgb(212, 107, 163)', // Pink
-  'rgb(163, 212, 107)', // Green
-  'rgb(107, 163, 212)', // Blue
-  'rgb(212, 212, 54)'   // Yellow
+  "rgb(212, 107, 163)", // Pink
+  "rgb(163, 212, 107)", // Green
+  "rgb(107, 163, 212)", // Blue
+  "rgb(212, 212, 54)", // Yellow
 ];
 
 export default class GameLocalPage extends Page {
@@ -28,7 +38,7 @@ export default class GameLocalPage extends Page {
   private nPlayers: number = 2;
   private finalScores: { player: number; score: number }[] = [];
   private gameDuration: number = 0;
-  private readonly CONTROL_KEYS = ['W/S', 'J/U', 'T/Y', 'V/B'];
+  private readonly CONTROL_KEYS = ["W/S", "J/U", "T/Y", "V/B"];
 
   constructor(router: Router) {
     super(router);
@@ -42,11 +52,13 @@ export default class GameLocalPage extends Page {
       new Div(
         // Setup screen
         new Div(
-          new Header(1, "Local Multiplayer")
-            .class("text-4xl font-bold text-white mb-8 text-center"),
+          new Header(1, "Local Multiplayer").class(
+            "text-4xl font-bold text-white mb-8 text-center",
+          ),
 
-          new Paragraph("Select number of players:")
-            .class("text-xl text-neutral-400 mb-6 text-center"),
+          new Paragraph("Select number of players:").class(
+            "text-xl text-neutral-400 mb-6 text-center",
+          ),
 
           new Div(
             new Button(new Paragraph("2 Players").class("text-xl py-4 px-8"))
@@ -62,8 +74,8 @@ export default class GameLocalPage extends Page {
             new Button(new Paragraph("4 Players").class("text-xl py-4 px-8"))
               .class(DEFAULT_BUTTON)
               .withId("btn-4pl")
-              .withOnclick(() => this.createGame(4))
-          ).class("flex gap-4 justify-center")
+              .withOnclick(() => this.createGame(4)),
+          ).class("flex gap-4 justify-center"),
         )
           .withId("setup-screen")
           .class("flex flex-col justify-center items-center min-h-screen"),
@@ -83,37 +95,46 @@ export default class GameLocalPage extends Page {
           // Center overlay for ready button
           new Div(
             new Div(
-              new Paragraph("All players ready?")
-                .class("text-2xl font-bold text-white mb-6 text-center"),
+              new Paragraph("All players ready?").class(
+                "text-2xl font-bold text-white mb-6 text-center",
+              ),
 
-              new Paragraph("Game Rules")
-                .class("text-sm font-bold text-neutral-300 mb-2 text-center"),
+              new Paragraph("Game Rules").class(
+                "text-sm font-bold text-neutral-300 mb-2 text-center",
+              ),
 
               new Div(
-                new Paragraph("First to 7 points wins")
-                  .class("text-sm text-neutral-400"),
-                new Paragraph("Game ends after 2 minutes")
-                  .class("text-sm text-neutral-400"),
-                new Paragraph("Own goals lose a point")
-                  .class("text-sm text-neutral-400")
+                new Paragraph("First to 7 points wins").class(
+                  "text-sm text-neutral-400",
+                ),
+                new Paragraph("Game ends after 2 minutes").class(
+                  "text-sm text-neutral-400",
+                ),
+                new Paragraph("Own goals lose a point").class(
+                  "text-sm text-neutral-400",
+                ),
               ).class("mb-6 text-center"),
 
-              new Paragraph("Player Controls")
-                .class("text-sm font-bold text-neutral-300 mb-2 text-center"),
+              new Paragraph("Player Controls").class(
+                "text-sm font-bold text-neutral-300 mb-2 text-center",
+              ),
 
               new Paragraph("")
                 .withId("controls-info")
                 .class("text-sm text-neutral-400 mb-8 text-center"),
 
               new Div(
-                new Button(new Paragraph("Start Game").class("text-xl py-4 px-12"))
+                new Button(
+                  new Paragraph("Start Game").class("text-xl py-4 px-12"),
+                )
                   .class(DEFAULT_BUTTON)
                   .class("bg-green-600 hover:bg-green-700")
                   .withId("ready-btn")
-                  .withOnclick(() => this.startGame())
-              ).class("flex justify-center")
-            )
-              .class("bg-black/80 backdrop-blur-md p-8 rounded-xl outline outline-2 outline-pink-500 flex flex-col items-center max-w-md")
+                  .withOnclick(() => this.startGame()),
+              ).class("flex justify-center"),
+            ).class(
+              "bg-black/80 backdrop-blur-md p-8 rounded-xl outline outline-2 outline-pink-500 flex flex-col items-center max-w-md",
+            ),
           )
             .withId("ready-overlay")
             .class("absolute inset-0 flex items-center justify-center hidden"),
@@ -121,17 +142,18 @@ export default class GameLocalPage extends Page {
           // Permanent controls display in top right
           new Div()
             .withId("controls-display")
-            .class("absolute top-24 right-4 bg-black/50 backdrop-blur-sm p-3 rounded-lg flex flex-col gap-2 hidden"),
+            .class(
+              "absolute top-24 right-4 bg-black/50 backdrop-blur-sm p-3 rounded-lg flex flex-col gap-2 hidden",
+            ),
 
           // Game over overlay
           new Div(
             new Div(
-              new Paragraph("Game Over!")
-                .class("text-4xl font-bold text-white mb-8 text-center"),
+              new Paragraph("Game Over!").class(
+                "text-4xl font-bold text-white mb-8 text-center",
+              ),
 
-              new Div()
-                .withId("final-scores")
-                .class("mb-8"),
+              new Div().withId("final-scores").class("mb-8"),
 
               new Div(
                 new Button(new Paragraph("Save Game").class("py-3 px-8"))
@@ -154,28 +176,29 @@ export default class GameLocalPage extends Page {
                   .class(DEFAULT_BUTTON)
                   .withOnclick(() => {
                     // Restore header
-                    const header = document.querySelector('header');
+                    const header = document.querySelector("header");
                     if (header) {
-                      (header as HTMLElement).style.display = '';
+                      (header as HTMLElement).style.display = "";
                     }
                     this.router.navigate("/dashboard");
-                  })
-              ).class("flex gap-4 justify-center")
-            )
-              .class("bg-black/80 backdrop-blur-md p-12 rounded-xl outline outline-2 outline-pink-500")
+                  }),
+              ).class("flex gap-4 justify-center"),
+            ).class(
+              "bg-black/80 backdrop-blur-md p-12 rounded-xl outline outline-2 outline-pink-500",
+            ),
           )
             .withId("gameover-overlay")
-            .class("absolute inset-0 flex items-center justify-center hidden")
+            .class("absolute inset-0 flex items-center justify-center hidden"),
         )
           .withId("game-screen")
-          .class("relative w-full h-screen overflow-hidden hidden")
-      ).class("relative w-full h-screen overflow-hidden")
+          .class("relative w-full h-screen overflow-hidden hidden"),
+      ).class("relative w-full h-screen overflow-hidden"),
     ];
   }
 
   bindEvents(): void {
     // Hide page header for fullscreen
-    APP.headerRoot.style.display = 'none';
+    APP.headerRoot.style.display = "none";
 
     this.renderGameState();
     this.bindSetupButtons();
@@ -188,72 +211,73 @@ export default class GameLocalPage extends Page {
   }
 
   private bindSetupButtons(): void {
-    ['btn-2pl', 'btn-3pl', 'btn-4pl'].forEach((id, i) => {
+    ["btn-2pl", "btn-3pl", "btn-4pl"].forEach((id, i) => {
       const btn = document.getElementById(id);
       if (btn) btn.onclick = () => this.createGame(i + 2);
     });
   }
 
   private renderGameState(): void {
-    const setupScreen = document.getElementById('setup-screen');
-    const gameScreen = document.getElementById('game-screen');
-    const readyOverlay = document.getElementById('ready-overlay');
-    const gameoverOverlay = document.getElementById('gameover-overlay');
+    const setupScreen = document.getElementById("setup-screen");
+    const gameScreen = document.getElementById("game-screen");
+    const readyOverlay = document.getElementById("ready-overlay");
+    const gameoverOverlay = document.getElementById("gameover-overlay");
 
-    if (!setupScreen || !gameScreen || !readyOverlay || !gameoverOverlay) return;
+    if (!setupScreen || !gameScreen || !readyOverlay || !gameoverOverlay)
+      return;
 
     // Hide all screens first
-    [setupScreen, gameScreen, readyOverlay, gameoverOverlay].forEach(el =>
-      el.classList.add('hidden')
+    [setupScreen, gameScreen, readyOverlay, gameoverOverlay].forEach((el) =>
+      el.classList.add("hidden"),
     );
 
     switch (this.gameState) {
       case "setup":
-        setupScreen.classList.remove('hidden');
+        setupScreen.classList.remove("hidden");
         break;
 
       case "waiting":
-        gameScreen.classList.remove('hidden');
-        readyOverlay.classList.remove('hidden');
+        gameScreen.classList.remove("hidden");
+        readyOverlay.classList.remove("hidden");
         break;
 
       case "playing":
-        gameScreen.classList.remove('hidden');
+        gameScreen.classList.remove("hidden");
         break;
 
       case "finished":
-        gameScreen.classList.remove('hidden');
-        gameoverOverlay.classList.remove('hidden');
+        gameScreen.classList.remove("hidden");
+        gameoverOverlay.classList.remove("hidden");
         this.displayFinalScores();
         break;
     }
   }
 
   private async createGame(nPlayers: number): Promise<void> {
-    console.log('createGame called with nPlayers:', nPlayers);
+    console.log("createGame called with nPlayers:", nPlayers);
     this.nPlayers = nPlayers;
 
     try {
-      console.log('Calling api to get new local game');
-      const response = await fetch('/api/v1/games/local/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nPlayers })
+      console.log("Calling api to get new local game");
+      const response = await fetch("/api/v1/games/local/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nPlayers }),
       });
 
-      console.log('Response status:', response.status);
+      console.log("Response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error('Failed to create game: ' + response.status);
+        console.error("Error response:", errorText);
+        throw new Error("Failed to create game: " + response.status);
       }
 
       const data = await response.json();
       this.gameKeys = data.gameKeys;
       this.gameId = data.gameKeys[0].gameId;
 
-      console.log('Local game created:', data);
+      console.log("Local game created:", data);
 
       this.initialiseGame();
 
@@ -261,41 +285,40 @@ export default class GameLocalPage extends Page {
       this.renderGameState();
       this.updateControlsInfo();
       this.bindReadyButton();
-
     } catch (error) {
-      console.error('Error creating local game:', error);
-      alert('Failed to create game. Please try again.');
+      console.error("Error creating local game:", error);
+      alert("Failed to create game. Please try again.");
     }
   }
 
   private bindReadyButton(): void {
-    const readyBtn = document.getElementById('ready-btn');
+    const readyBtn = document.getElementById("ready-btn");
     if (readyBtn) {
       readyBtn.onclick = () => this.startGame();
     }
   }
 
   private initialiseGame(): void {
-    const container = document.getElementById('canvas-container');
+    const container = document.getElementById("canvas-container");
     if (!container) return;
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.id = this.canvasId;
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.position = 'absolute';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.position = "absolute";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
     canvas.tabIndex = 1;
-    container.innerHTML = '';
+    container.innerHTML = "";
     container.appendChild(canvas);
 
     // Set up WebSocket URL (dynamic ws/wss until HTTPS is configured)
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/api/v1/ws`;
-    const [t1, t2, t3, t4] = this.gameKeys.map(k => k.key);
+    const [t1, t2, t3, t4] = this.gameKeys.map((k) => k.key);
 
-    console.log('Initialising PongApp with', this.nPlayers, 'players');
+    console.log("Initialising PongApp with", this.nPlayers, "players");
 
     setTimeout(() => {
       this.gameInstance = new PongApp(wsUrl, t1, undefined, t2, t3, t4);
@@ -306,43 +329,49 @@ export default class GameLocalPage extends Page {
   }
 
   private createGameHUD(): void {
-    const hudContainer = document.getElementById('game-hud');
+    const hudContainer = document.getElementById("game-hud");
     if (!hudContainer) return;
 
-    const players = Array.from({ length: this.nPlayers }, (_, i) =>
-      new PlayerAvatar(
-        `Player ${i + 1}`,
-        `score-${i}`,
-        PLAYER_COLOURS[i],
-        (i === 0 || i === 3) ? 'left' : 'right'
-      )
+    const players = Array.from(
+      { length: this.nPlayers },
+      (_, i) =>
+        new PlayerAvatar(
+          `Player ${i + 1}`,
+          `score-${i}`,
+          PLAYER_COLOURS[i],
+          i === 0 || i === 3 ? "left" : "right",
+        ),
     );
 
-    hudContainer.innerHTML = new GameHUD(players).withId('game-hud-content').render();
+    hudContainer.innerHTML = new GameHUD(players)
+      .withId("game-hud-content")
+      .render();
   }
 
   private updateControlsInfo(): void {
-    const controlsInfo = document.getElementById('controls-info');
+    const controlsInfo = document.getElementById("controls-info");
     if (!controlsInfo) return;
 
     const elements: AElement[] = [];
 
     for (let i = 0; i < this.nPlayers; i++) {
-      if (i > 0) elements.push(new Inline('  |  '));
+      if (i > 0) elements.push(new Inline("  |  "));
       elements.push(
         new ColoredText(`Player ${i + 1}`, PLAYER_COLOURS[i]),
-        new Inline(`: ${this.CONTROL_KEYS[i]}`)
+        new Inline(`: ${this.CONTROL_KEYS[i]}`),
       );
     }
 
-    controlsInfo.innerHTML = elements.map(e => e.render()).join('');
+    controlsInfo.innerHTML = elements.map((e) => e.render()).join("");
   }
 
   private updatePermanentControls(): void {
-    const controlsDisplay = document.getElementById('controls-display');
+    const controlsDisplay = document.getElementById("controls-display");
     if (!controlsDisplay) return;
 
-    const controls: string[] = ['<p class="text-xs font-bold text-neutral-300 mb-2">Controls</p>'];
+    const controls: string[] = [
+      '<p class="text-xs font-bold text-neutral-300 mb-2">Controls</p>',
+    ];
 
     for (let i = 0; i < this.nPlayers; i++) {
       const colour = PLAYER_COLOURS[i];
@@ -354,8 +383,8 @@ export default class GameLocalPage extends Page {
       `);
     }
 
-    controlsDisplay.innerHTML = controls.join('');
-    controlsDisplay.classList.remove('hidden');
+    controlsDisplay.innerHTML = controls.join("");
+    controlsDisplay.classList.remove("hidden");
   }
 
   private startGame(): void {
@@ -364,12 +393,19 @@ export default class GameLocalPage extends Page {
     const startTime = Date.now();
 
     // Send ready signal for all connected players
-    [this.gameInstance.player1, this.gameInstance.player2,
-    this.gameInstance.player3, this.gameInstance.player4]
-      .filter((p): p is NonNullable<typeof p> => p !== undefined && p.ws.readyState === WebSocket.OPEN)
-      .forEach(p => {
+    [
+      this.gameInstance.player1,
+      this.gameInstance.player2,
+      this.gameInstance.player3,
+      this.gameInstance.player4,
+    ]
+      .filter(
+        (p): p is NonNullable<typeof p> =>
+          p !== undefined && p.ws.readyState === WebSocket.OPEN,
+      )
+      .forEach((p) => {
         p.ws.send(JSON.stringify({ type: "ready" }));
-        console.log('Sent ready for player');
+        console.log("Sent ready for player");
       });
 
     this.gameState = "playing";
@@ -396,12 +432,12 @@ export default class GameLocalPage extends Page {
       }
 
       // Update timer
-      const timerEl = document.getElementById('game-timer');
+      const timerEl = document.getElementById("game-timer");
       if (!timerEl) return;
 
       if (gameState.pauseCd > 0) {
         // Show countdown
-        const countdown = Math.ceil(gameState.pauseCd * params.tickMs / 1000);
+        const countdown = Math.ceil((gameState.pauseCd * params.tickMs) / 1000);
         timerEl.textContent = String(countdown);
         timerEl.classList.remove(...TIMER_NORMAL);
         timerEl.classList.add(...TIMER_COUNTDOWN);
@@ -410,7 +446,7 @@ export default class GameLocalPage extends Page {
         const seconds = Math.floor(gameState.time / 1000);
         const minutes = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        timerEl.textContent = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
         timerEl.classList.remove(...TIMER_COUNTDOWN);
         timerEl.classList.add(...TIMER_NORMAL);
         this.gameDuration = Date.now() - startTime;
@@ -442,14 +478,15 @@ export default class GameLocalPage extends Page {
     console.log("Game ended!", msg);
 
     // Get final scores from message or fallback to game state
-    const players = msg.players?.length > 0
-      ? msg.players
+    const players =
+      msg.players?.length > 0 ?
+        msg.players
       : this.gameInstance?.gameState?.players;
 
     if (players) {
       this.finalScores = players.map((p: any, idx: number) => ({
         player: idx + 1,
-        score: p.score
+        score: p.score,
       }));
     }
 
@@ -461,25 +498,27 @@ export default class GameLocalPage extends Page {
   }
 
   private bindGameOverButtons(): void {
-    console.log('Binding game over buttons...');
+    console.log("Binding game over buttons...");
 
     setTimeout(() => {
-      const saveBtn = document.getElementById('save-btn');
-      const buttons = document.querySelectorAll<HTMLButtonElement>('#gameover-overlay button');
+      const saveBtn = document.getElementById("save-btn");
+      const buttons = document.querySelectorAll<HTMLButtonElement>(
+        "#gameover-overlay button",
+      );
 
-      console.log('Found buttons:', buttons.length);
+      console.log("Found buttons:", buttons.length);
 
       // Save game (optional)
       if (saveBtn) {
-        console.log('Binding save button');
+        console.log("Binding save button");
         saveBtn.onclick = () => this.saveGame();
       }
 
       // Play again
       if (buttons[1]) {
-        console.log('Binding play again button');
+        console.log("Binding play again button");
         buttons[1].onclick = () => {
-          console.log('Play again clicked');
+          console.log("Play again clicked");
           // this.restoreHeader();
           this.resetGame();
           this.gameState = "setup";
@@ -490,9 +529,9 @@ export default class GameLocalPage extends Page {
 
       // Exit to dashboard
       if (buttons[2]) {
-        console.log('Binding exit button');
+        console.log("Binding exit button");
         buttons[2].onclick = () => {
-          console.log('Exit clicked');
+          console.log("Exit clicked");
           this.restoreHeader();
           this.router.navigate("/dashboard");
         };
@@ -501,21 +540,21 @@ export default class GameLocalPage extends Page {
   }
 
   private restoreHeader(): void {
-    APP.headerRoot.style.display = '';
+    APP.headerRoot.style.display = "";
   }
 
   private displayFinalScores(): void {
-    const scoresContainer = document.getElementById('final-scores');
+    const scoresContainer = document.getElementById("final-scores");
     if (!scoresContainer) return;
 
     const sorted = [...this.finalScores].sort((a, b) => b.score - a.score);
     const topScore = sorted[0].score;
-    const winners = sorted.filter(s => s.score === topScore);
+    const winners = sorted.filter((s) => s.score === topScore);
 
     // Winner/draw announcement
-    let winnerHTML = '';
+    let winnerHTML = "";
     if (winners.length > 1) {
-      const names = winners.map(w => `Player ${w.player}`).join(' & ');
+      const names = winners.map((w) => `Player ${w.player}`).join(" & ");
       winnerHTML = `
         <div class="mb-6 text-center">
           <p class="text-2xl font-bold mb-2 text-yellow-400">Draw!</p>
@@ -534,9 +573,10 @@ export default class GameLocalPage extends Page {
       `;
     }
 
-    const scoresHTML = sorted.map(s => {
-      const colour = PLAYER_COLOURS[s.player - 1];
-      return `
+    const scoresHTML = sorted
+      .map((s) => {
+        const colour = PLAYER_COLOURS[s.player - 1];
+        return `
         <div class="flex items-center justify-between p-4 bg-gray-800 rounded-lg mb-2">
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded-full" style="background: ${colour}; outline: 2px solid ${colour};"></div>
@@ -545,7 +585,8 @@ export default class GameLocalPage extends Page {
           <span class="text-3xl font-bold" style="color: ${colour};">${s.score}</span>
         </div>
       `;
-    }).join('');
+      })
+      .join("");
 
     scoresContainer.innerHTML = winnerHTML + scoresHTML;
   }
@@ -554,39 +595,44 @@ export default class GameLocalPage extends Page {
     try {
       const sorted = [...this.finalScores].sort((a, b) => b.score - a.score);
       const topScore = sorted[0].score;
-      const winners = sorted.filter(s => s.score === topScore);
+      const winners = sorted.filter((s) => s.score === topScore);
 
       // Prepare submission data
       const submission = {
         gameId: this.gameId,
-        players: this.finalScores.map(s => ({
+        players: this.finalScores.map((s) => ({
           id: s.player === 1 ? APP.userInfo!.id : `Player${s.player}`,
-          score: s.score
+          score: s.score,
         })),
-        winnerId: winners.length === 1
-          ? (winners[0].player === 1 ? APP.userInfo!.id : `Player${winners[0].player}`)
+        winnerId:
+          winners.length === 1 ?
+            winners[0].player === 1 ?
+              APP.userInfo!.id
+            : `Player${winners[0].player}`
           : undefined,
-        duration: `PT${Math.floor(this.gameDuration / 1000)}S`
+        duration: `PT${Math.floor(this.gameDuration / 1000)}S`,
       };
 
-      const response = await fetch('/api/v1/user/games/local', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submission)
+      const response = await fetch("/api/v1/user/games/local", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submission),
       });
 
       if (response.ok || response.status === 204) {
-        const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+        const saveBtn = document.getElementById(
+          "save-btn",
+        ) as HTMLButtonElement;
         if (saveBtn) {
           saveBtn.disabled = true;
-          saveBtn.textContent = 'Saved.';
+          saveBtn.textContent = "Saved.";
         }
       } else {
-        throw new Error('Failed to save game');
+        throw new Error("Failed to save game");
       }
     } catch (error) {
-      console.error('Error saving game:', error);
-      alert('Failed to save game. Please try again.');
+      console.error("Error saving game:", error);
+      alert("Failed to save game. Please try again.");
     }
   }
 
@@ -597,9 +643,9 @@ export default class GameLocalPage extends Page {
       this.gameInstance = null;
     }
 
-    const container = document.getElementById('canvas-container');
+    const container = document.getElementById("canvas-container");
     if (container) {
-      container.innerHTML = '';
+      container.innerHTML = "";
     }
 
     this.gameKeys = [];

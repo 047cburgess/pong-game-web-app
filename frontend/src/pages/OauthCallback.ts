@@ -16,7 +16,7 @@ export default class GithubCallback extends Page {
         .class(HOW_TO_CENTER_A_DIV)
         .class("absolute top-1/2 left-1/2 text-neutral-600")
         .class("transform -translate-y-1/2 -translate-x-1/2")
-        .class("flex flex-col select-none font-bold")
+        .class("flex flex-col select-none font-bold"),
     ];
   }
 
@@ -42,12 +42,13 @@ export default class GithubCallback extends Page {
     }
     let body;
     if (resp.ok || resp.status === 304) {
-      body = await resp.json().catch(console.error) as void |
-        ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
+      body = (await resp.json().catch(console.error)) as
+        | void
+        | ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
     }
     if (body) {
       APP.onLogin(body);
       this.router.navigate("");
     }
   }
-};
+}

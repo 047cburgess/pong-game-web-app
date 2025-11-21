@@ -41,7 +41,7 @@ export const passwordValidator: FieldValidator = (password) => {
     MISSING_UPPERCASE = "Need at least one uppercase character",
     MISSING_LOWERCASE = "Need at least one lowercase character",
     MISSING_NUMBER = "Need at least one number",
-    MISSING_SPECIAL = "Need at least one special character"
+    MISSING_SPECIAL = "Need at least one special character",
   }
 
   const HAS_UPPERCASE = /[A-Z]/;
@@ -53,16 +53,13 @@ export const passwordValidator: FieldValidator = (password) => {
 
   if (!password || password.length < PASSWORD_MIN_LEN)
     errors.push(PasswordErrors.TOO_SHORT);
-  if (password.length > PASSWORD_MAX_LEN)
-    errors.push(PasswordErrors.TOO_LONG);
+  if (password.length > PASSWORD_MAX_LEN) errors.push(PasswordErrors.TOO_LONG);
   if (!HAS_UPPERCASE.test(password))
     errors.push(PasswordErrors.MISSING_UPPERCASE);
   if (!HAS_LOWERCASE.test(password))
     errors.push(PasswordErrors.MISSING_LOWERCASE);
-  if (!HAS_NUMBER.test(password))
-    errors.push(PasswordErrors.MISSING_NUMBER);
-  if (!HAS_SPECIAL.test(password))
-    errors.push(PasswordErrors.MISSING_SPECIAL);
+  if (!HAS_NUMBER.test(password)) errors.push(PasswordErrors.MISSING_NUMBER);
+  if (!HAS_SPECIAL.test(password)) errors.push(PasswordErrors.MISSING_SPECIAL);
 
   if (errors.length) {
     return errors;
