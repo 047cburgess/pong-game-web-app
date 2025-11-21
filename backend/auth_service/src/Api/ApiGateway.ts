@@ -1,6 +1,7 @@
 import fastifyHttpProxy from '@fastify/http-proxy'
 import { FastifyInstance } from "fastify"
-import { JwtCookieChecker } from './Hanlders';
+import { JwtCookieChecker, OnSendHandler } from './Hanlders';
+import { on } from 'events';
 
 export async function apiGateway(server: FastifyInstance) {
 
@@ -54,6 +55,8 @@ export async function apiGateway(server: FastifyInstance) {
 		prefix: "/tournaments",
 		rewritePrefix: "/tournaments",
 	});
+
+	server.addHook("onSend", OnSendHandler);
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.USER_SERVICE}`,

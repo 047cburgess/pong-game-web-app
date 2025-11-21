@@ -27,6 +27,10 @@ export class ApiError extends Error {
         };
     }
 
+	public static NoChange(message: string, details: string | string[]): ApiError {
+		return new ApiError(304, message, details);
+	}
+
     public static BadRequest(message: string, details: string | string[]): ApiError {
         return new ApiError(400, message, details);
     }
@@ -38,7 +42,10 @@ export class ApiError extends Error {
     public static Forbidden(message: string, details: string | string[]): ApiError {
         return new ApiError(403, message, details);
     }
-    
+
+    public static NotFound(message: string, details: string | string[]): ApiError {
+        return new ApiError(404, message, details);
+    }
     public static Internal(message: string, details: string | string[] = ['Une erreur interne est survenue.']): ApiError {
         return new ApiError(500, message, details);
     }

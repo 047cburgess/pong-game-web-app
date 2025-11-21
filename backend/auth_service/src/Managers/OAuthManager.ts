@@ -8,6 +8,7 @@ import { OauthCredentialsInfo } from '../Interfaces/UserPrivateInfo';
 import { DbManager } from './DbManager';
 import { TwoFAManager } from './TwoFAManager';
 import { TwoFactorRequiredError } from '../Errors/TwoFactorRequiredError';
+import { AuthManager } from './AuthManager';
 
 // Définir la structure de la réponse d'échange de token (pour la clarté)
 interface GitHubTokenResponse {
@@ -20,6 +21,7 @@ interface GitHubProfileResponse {
 	id: number,
 	email: string,
 	login: string,
+	avatar_url: string
 }
 
 
@@ -140,12 +142,14 @@ export class OAuthManager {
 			const credentials: OauthCredentialsInfo = {
 				id: IdUtils.generateId(timestamp),
 				OauthProvider: "github",
+				username: userProfile.login,
 				email: userProfile.email,
 				externalId: userProfile.id.toString(),
 				TwoFA: 0
 			};
 			localUserId = credentials.id
-			db.saveOAuthCredentials(credentials);
+			AuthManager.getInstance().notifyUserDataService(credentials.id, credentials.username, userProfile.avatar_url);
+			db.createUserWithOAuth(credentials);
 		}
 		return JWTManager.getInstance().generateJWT(localUserId);
 	}

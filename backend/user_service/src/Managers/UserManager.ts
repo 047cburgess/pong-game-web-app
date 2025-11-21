@@ -14,14 +14,16 @@ export enum UserStatus{
 
 export interface PublicInfo {
 	id: number,
-	username: string;
-	lastSeen: number;
+	username: string,
+	lastSeen: number,
+	avatarUrl: string
 }
 
 export interface UserData {
 	id : user_id,
 	name:string,
 	last_seen: number,
+	avatarUrl: string
 }
 
 
@@ -102,12 +104,13 @@ export class UserManager extends ManagerBase {
 
 	// ---------------- Lifecycle ----------------
 
-	createDefault(id: user_id, name?: string): UserData {
+	createDefault(id: user_id, name?: string, avatarUrl? : string): UserData {
 		const timestamp = Date.now();
 		const user: UserData = {
 			id: id,
 			name: name ?? generateUsername(timestamp), //idk should we give a random username until chaged ?
 			last_seen: timestamp,
+			avatarUrl: avatarUrl ?? "/api/v1/user/avatars/default.webp"
 		};
 		this.addToCache(user);
 		this.db.saveUser(user);
@@ -180,7 +183,8 @@ export class UserManager extends ManagerBase {
 		return {
 			id : user.id,
 			username: user.name,
-			lastSeen: user.last_seen
+			lastSeen: user.last_seen,
+			avatarUrl: user.avatarUrl
 		};
 	}
 

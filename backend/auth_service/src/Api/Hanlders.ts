@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest, HookHandlerDoneFunction, onRequestAsyncHo
 import { JWTManager } from "../Managers/JWTManager";
 import { TwoFactorRequiredError } from "../Errors/TwoFactorRequiredError";
 import { ApiError } from "../Errors/ApiError";
+import { AuthManager } from "../Managers/AuthManager";
 
 export const JwtCookieChecker: onRequestAsyncHookHandler = async (request, reply) => {
 	const publicPaths: string[] = [];
@@ -32,7 +33,7 @@ export const authErrorHandler = (error: unknown, request: FastifyRequest, reply:
             secure: "auto",
             maxAge: 60 * 5 
         });
-        return reply.status(401).send({ status: "2FA_REQUIRED" });
+        return reply.status(200).send({ status: "2FA_REQUIRED" });
     }
 
     if (error instanceof ApiError) {
@@ -48,6 +49,30 @@ export const authErrorHandler = (error: unknown, request: FastifyRequest, reply:
         error: "Internal Server Error"
     });
 };
+
+
+export const OnSendHandler = (request: FastifyRequest, reply: FastifyReply, payload: any, done: HookHandlerDoneFunction) => 
+{
+	if(request.method === `DELETE` && reply.statusCode === 204 && request.url === `/user`)
+	{
+		reply.clearCookie("jwt", { path: "/" });
+		AuthManager.getInstance().deleteUserData(Number(request.headers['x-user-id']));
+	}
+	if(request.method === `PUT` && reply.statusCode === 200 && request.url === `/user/username`)
+	{
+		AuthManager.getInstance().updateUsername(Number(request.headers['x-user-id']), JSON.parse(payload).username);
+		
+	}
+	done();
+};
+
+export const OnUserDeleted = (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) => 
+{
+
+
+	
+};
+
 
 export const TwoFaCookieChecker =  (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) => {
 

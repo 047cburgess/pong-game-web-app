@@ -2,12 +2,13 @@ import { MailUtil } from "../Utils/MailUtils";
 import { PasswordUtils } from "../Utils/PasswordUtils";
 import { IdUtils } from "../Utils/IdUtils";
 import { UsernameUtils } from "../Utils/UsernameUtils";
-import { CredentialsInfo } from "../Interfaces/UserPrivateInfo";
+import { CommonCredentialsInfo, CredentialsInfo, UserCredentialsInfo } from "../Interfaces/UserPrivateInfo";
 import { DbManager } from "./DbManager";
 import { TwoFAManager } from "./TwoFAManager";
 import { JWTManager } from "./JWTManager";
 import { ApiError } from "../Errors/ApiError";
 import { TwoFactorRequiredError } from "../Errors/TwoFactorRequiredError";
+import { error } from "console";
 
 
 
@@ -26,10 +27,18 @@ export class AuthManager {
 		}
 		return AuthManager._instance;
 	}
-	
+
+	updateUsername(userId: number, newUsername: string): void {
+		const credentials = this.db.getUserById(userId);
+		if (!credentials)
+			throw ApiError.NotFound("USER_NOT_FOUND", []);
+
+		credentials.username = newUsername;
+		this.db.updateUser(userId, credentials);
+	}
 	//credential is either mail or username
 	async login(credential: string, password: string): Promise<string> {
-		
+
 		const user = this.db.getUserByCredential(credential);
 
 		if (!user) {
@@ -42,7 +51,7 @@ export class AuthManager {
 		if (user.TwoFA) {
 			const token = this.twoFA.generateAndStoreCode(user.id);
 			//this.twoFA.prepareMailData(token, user.email);
-			
+
 			//send mail: ADDED -> uses prepare mail data inside
 			await this.twoFA.sendMail(token, user.email);
 
@@ -52,12 +61,54 @@ export class AuthManager {
 		return jwt;
 	}
 
+	async notifyUserDataService(userId : number, username : string, avatarUrl?:string) {
+		const endpoint = `${process.env.USER_SERVICE}/internal/user/initialize`;
+
+		const response = await fetch(endpoint, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ user_id : userId, username : username, avatarUrl: avatarUrl})
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw ApiError.Unauthorized("ERROR_DURING_DATA_INIT", errorText);
+		}
+	}
+
 	login2FA(token: number, code: string): string {
 		const user_id = this.twoFA.testCodeValidity(token, code);
 		return this.jwt_manager.generateJWT(user_id);
 	}
 
-	public validateCredentialsInfo(credentialsInfo: Omit<CredentialsInfo, 'id'>): void {
+	public enableTwoFA(userId: number): void {
+		const credentials = this.db.getUserById(userId);
+		if (!credentials)
+			throw ApiError.NotFound("USER_NOT_FOUND", []);
+		if (!credentials.TwoFA) {
+			credentials.TwoFA = 1;
+		} else {
+			throw ApiError.NoChange("2FA_ALREADY_ENABLED", []);
+		}
+		this.db.updateUser(userId, credentials);
+	}
+
+	public async disableTwoFA(userId: number): Promise<void> {
+		const credentials = this.db.getUserById(userId);
+		if (!credentials)
+			throw ApiError.NotFound("USER_NOT_FOUND", []);
+		if (credentials.TwoFA) {
+			credentials.TwoFA = 0;
+		} else {
+			throw ApiError.NoChange("2FA_ALREADY_DISABLED", []);
+		}
+		this.db.updateUser(userId, credentials);
+	}
+
+
+	public validateCredentialsInfo(credentialsInfo: Omit<CredentialsInfo, 'id' | 'TwoFA'>): void {
 		let { username, email, password } = credentialsInfo;
 		const validationErrors: string[] = [
 			...UsernameUtils.validateUsername(username).errors,
@@ -73,7 +124,7 @@ export class AuthManager {
 		}
 	}
 
-	async register(credentialsInfo: Omit<CredentialsInfo, 'id'>): Promise<string> {
+	async register(credentialsInfo: Omit<CredentialsInfo, 'id' | 'TwoFA'>): Promise<string> {
 		this.validateCredentialsInfo(credentialsInfo);
 
 		const timestamp = Date.now();
@@ -82,16 +133,17 @@ export class AuthManager {
 			username: credentialsInfo.username,
 			email: credentialsInfo.email,
 			password: await PasswordUtils.hash(credentialsInfo.password),
-			TwoFA: credentialsInfo.TwoFA || 0
+			TwoFA: 0
 		};
 		this.trySaveCredentials(credentials);
 
+		await this.notifyUserDataService(credentials.id, credentials.username);
 		return this.jwt_manager.generateJWT(credentials.id);
 	}
 
 	public trySaveCredentials(credentialsInfo: CredentialsInfo): void {
 		try {
-			this.db.saveCredentials(credentialsInfo);
+			this.db.createUserWithPassword(credentialsInfo);
 		}
 		catch (e: any) {
 			if (e.code === 'SQLITE_CONSTRAINT' || e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -110,5 +162,9 @@ export class AuthManager {
 			}
 			throw e;
 		}
+	}
+
+	public deleteUserData(userId: number): void {
+		this.db.deleteUserById(userId);
 	}
 }

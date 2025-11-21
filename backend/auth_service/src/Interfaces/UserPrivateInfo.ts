@@ -5,19 +5,24 @@ export interface PrivateInfo {
 	email? : string,
 }
 
-export interface CredentialsInfo {
-	id : user_id, //internal_id shared to other microservices
-	email : string, //required for 2FA
+export interface CommonCredentialsInfo {
+	id : user_id,
+	email : string,
 	username : string,
+	TwoFA : number
+}
+
+export type CredentialsInfo = CommonCredentialsInfo & UserCredentialsInfo;
+export type  OauthCredentialsInfo = CommonCredentialsInfo & UserOauthInfo;
+
+export interface UserCredentialsInfo {
+	id : user_id, //internal_id shared to other microservices
 	password : string, //hashed
-	TwoFA? : number // change to number as sqlite no like boolean
 } 
 
-export interface OauthCredentialsInfo {
+export interface  UserOauthInfo {
 	id : user_id,
 	OauthProvider : string,
-	externalId : string,
-	email : string,
-	TwoFA : number
+	externalId : string
 }
 

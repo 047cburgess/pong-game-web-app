@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { AuthManager } from "../Managers/AuthManager";
-import { authErrorHandler } from "./Hanlders";
+import { authErrorHandler, JwtCookieChecker } from "./Hanlders";
 import fastifyCookie from "@fastify/cookie";
 import { OAuthManager } from "../Managers/OAuthManager";
 
@@ -87,7 +87,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 			maxAge: 60 * 60 * 24 * 7
 		});
 
-		return reply.status(204).send();
+		return reply.status(200).send({ status: "success" });
 	});
 
 	server.post<{ Body: Login2FABody }>("/user/login/two-factor", { schema: { body: login2FABodySchema } }, async (request, reply) => {
@@ -163,6 +163,18 @@ export async function AuthPlugin(server: FastifyInstance) {
 			secure: false, //"auto" temp to false as browser doesn't like it
 			maxAge: 60 * 60 * 24 * 7
 		});
+		return reply.status(200).send({ status: "success" });
+	});
+
+	server.put("/user/two-factor", {preHandler : JwtCookieChecker} ,async (request, reply) => {
+		const user_id = request.headers['x-user-id'] as string;
+		AuthManager.getInstance().enableTwoFA(Number(user_id));
+		return reply.status(204).send();
+	});
+
+	server.delete("/user/two-factor", {preHandler : JwtCookieChecker}, async (request, reply) => {
+		const user_id = request.headers['x-user-id'] as string;
+		AuthManager.getInstance().disableTwoFA(Number(user_id));
 		return reply.status(204).send();
 	});
 }
