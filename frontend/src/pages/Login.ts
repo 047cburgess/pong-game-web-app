@@ -78,11 +78,12 @@ export default class LoginPage extends Page {
     try {
       resp = await fetch("/api/v1/user/oauth/github", { method: "POST" });
     } catch (e: any) {
-      // TODO
+      alert("Failed to sign in" + (e && ": " + e));
       return;
     }
     if (!resp.ok) {
-      // TODO
+      const text = await resp.text();
+      alert("Failed to sign in" + (text && ": " + text));
       return;
     }
 

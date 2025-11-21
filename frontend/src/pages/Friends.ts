@@ -19,10 +19,7 @@ const makeFriendCard =
   (router: Router) =>
   (f: UserInfo, i: number): AElement => {
     let statusText;
-    if (
-      f.lastSeen !== undefined
-      && Date.parse(f.lastSeen) + 4 * 60_000 > Date.now()
-    ) {
+    if (((f.lastSeen as void | number) ?? 0) + 4 * 60_000 > Date.now()) {
       statusText = new Paragraph("online").class(ONLINE_GREEN);
     } else {
       statusText = new Paragraph("offline").class(OFFLINE_GRAY);
@@ -37,7 +34,7 @@ const makeFriendCard =
     }
 
     return new Div(
-      (f.avatarUrl ? new Div(new Image(f.avatarUrl)) : new Div())
+      new Div(new Image(`/api/v1/user/avatars/${f.username}.webp`))
         .class("bg-zinc-800 m-1")
         .class(AVATAR_DIV)
         .withOnclick(navDashboard)

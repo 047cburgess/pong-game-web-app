@@ -18,6 +18,7 @@ import GithubCallback from "./pages/OauthCallback";
 import SettingsPage from "./pages/Settings";
 import PlayPage from "./pages/Play";
 import GameLocalPage from "./pages/GameLocal";
+import { CustomGamePage, WaitingMenu } from "./pages/CustomGame";
 
 export const getUsername = (): string | null => {
   return (

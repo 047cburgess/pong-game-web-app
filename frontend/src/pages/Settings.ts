@@ -1,7 +1,7 @@
 import { API, SelfInfo } from "../Api";
 import { APP } from "../App";
 import { usernameValidator } from "../FieldValidators";
-import Router, { NavError, Page } from "../Router";
+import Router, { Page } from "../Router";
 import {
   AVATAR_DIV,
   EVIL_RED_BUTTON,
@@ -59,10 +59,7 @@ export default class SettingsPage extends Page {
 
         new Div(
           new Div(
-            new Paragraph("New display name:").class("text-xl"),
-            new Paragraph("(NOT USED FOR SIGN IN)").class(
-              "text-xl text-red-900",
-            ),
+            new Paragraph("New username:").class("text-xl"),
             this.usernameText
               .withValidator(usernameValidator)
               .postValidation(() =>
@@ -126,7 +123,7 @@ export default class SettingsPage extends Page {
           method: "POST",
           body: data,
         }).catch((e) => {
-          alert("Failed to upload new avatar: " + e);
+          alert("Failed to upload new avatar: " + e + "\nFile too large?");
         });
         if (!resp) return;
         if (!resp.ok) {
@@ -176,6 +173,7 @@ export default class SettingsPage extends Page {
       : null;
     if (info) {
       APP.onLogin(info);
+      alert("Username updated!");
     } else {
       APP.onLogout();
     }

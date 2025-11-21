@@ -1,6 +1,6 @@
 import { API, GameResultExt, GameStats, UserInfo } from "../Api";
 import { APP, getUsername } from "../App";
-import Router, { NavError, Page } from "../Router";
+import Router, { Page } from "../Router";
 import {
   AVATAR_DIV,
   DEFAULT_BUTTON,
@@ -9,7 +9,14 @@ import {
   OFFLINE_GRAY,
   ONLINE_GREEN,
 } from "./elements/CssUtils";
-import { AElement, Div, Image, Inline, Paragraph } from "./elements/Elements";
+import {
+  AElement,
+  Button,
+  Div,
+  Image,
+  Inline,
+  Paragraph,
+} from "./elements/Elements";
 import { GameCardBase, GameCardLarge } from "./elements/GameCard";
 import {
   ICON_ADD_FRIEND,
@@ -27,7 +34,7 @@ const TILE_STYLES: string = "outline-0 rounded-xl outline-neutral-700 p-4";
 export default class DashboardPage extends Page {
   readonly username: string;
 
-  friendState?: "self" | "friend" | "outgoing" | "incoming" | null;
+  friendState?: "self" | "friends" | "outgoing" | "incoming" | null;
 
   userInfo?: UserInfo;
   stats?: GameStats;
@@ -86,8 +93,7 @@ export default class DashboardPage extends Page {
     let onlineStatus = new Paragraph("Offline")
       .class("col-span-2")
       .class(OFFLINE_GRAY);
-    const lastSeen =
-      this.userInfo?.lastSeen ? Date.parse(this.userInfo.lastSeen) : 0;
+    const lastSeen = (this.userInfo?.lastSeen as number | void) ?? 0;
     if (lastSeen + 4 * 60_000 > Date.now()) {
       onlineStatus = new Paragraph("Online")
         .class("col-span-2")
@@ -99,7 +105,7 @@ export default class DashboardPage extends Page {
         Date.parse(this.userInfo.registeredSince).toLocaleString()
       : "...";
 
-    const interactButtons: AElement[] = this.interactButtons();
+    const interactButtonsDiv: Div = this.interactButtonsDiv();
 
     return new Div(
       new Div(new Image("/api/v1/user/avatars/" + this.username + ".webp"))
@@ -108,10 +114,8 @@ export default class DashboardPage extends Page {
       new Div(new Paragraph(this.username).class("font-bold")).class(
         "flex flex-row gap-2 text-3xl mb-4 col-span-2",
       ),
-      ...interactButtons,
+      interactButtonsDiv,
       onlineStatus,
-      new Paragraph("Member since:"),
-      new Paragraph(registeredSince).class("text-right font-bold self-end"),
       new Paragraph("Games played:"),
       (this.stats ?
         new Paragraph(
@@ -131,20 +135,21 @@ export default class DashboardPage extends Page {
   }
 
   friendsTile(): Div {
+    if (this.username !== APP.userInfo?.username) {
+      return new Div();
+    }
+
     const friendCard = (info: UserInfo, index: number): AElement => {
       const elems = [
-        (info.avatarUrl ? new Div(new Image(info.avatarUrl)) : new Div())
+        new Div(new Image(`/api/v1/user/avatars/${info.username}.webp`))
           .class("w-8 bg-cyan-200")
           .class(AVATAR_DIV),
         new Div().class(
-          "h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900",
+          "h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900 z-100",
         ),
         new Paragraph(info.username).class("self-center font-bold"),
       ];
-      if (
-        info.lastSeen
-        && Date.parse(info.lastSeen) + 4 * 60_000 > Date.now()
-      ) {
+      if (((info.lastSeen as number | void) ?? 0) + 4 * 60_000 > Date.now()) {
         elems[1].class("bg-green-400");
       } else {
         elems[1].class("bg-neutral-400");
@@ -293,30 +298,62 @@ export default class DashboardPage extends Page {
     }
   }
 
-  interactButtons(): AElement[] {
+  interactButtonsDiv(): Div {
     // TODO(Vaiva): Dashboard page buttons
 
     const styles = "flex gap-2 font-bold p-1 pl-4 pr-4 -mt-1 mb-3";
 
     let buttons: AElement[] = [];
 
+    const inviteDuel = async () => {
+      // TODO
+      alert("Yeah sure");
+    };
+    const removeFriend = (route: string, prompt: string) => async () => {
+      const ok = confirm(prompt);
+      if (!ok) {
+        return;
+      }
+      await fetch(route, { method: "DELETE" }).catch(console.error);
+      await this.updateFriendsState();
+      this.interactButtonsDiv().redrawInner();
+    };
     switch (this.friendState) {
       case null:
       case "incoming":
         buttons = [
-          new Div(
+          new Button(
             new Inline(ICON_ADD_FRIEND).class("self-center"),
-            new Paragraph("Add friend").class("self-center"),
+            new Paragraph(
+              this.friendState ? "Accept friend request" : "Add friend",
+            ).class("self-center"),
           )
             .class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
+            .withOnclick(async () => {
+              try {
+                const method = this.friendState ? "PUT" : "POST";
+                const route =
+                  "/api/v1/user/friends/requests/"
+                  + (this.friendState ? "" : "outgoing/")
+                  + this.username;
+                let res = await fetch(route, { method });
+                if (res.ok) {
+                  await this.updateFriendsState();
+                  this.interactButtonsDiv().redrawInner();
+                }
+              } catch (e: any) {
+                alert("Failed to send a friend request: " + e);
+              }
+            })
             .withId("add-friend-btn"),
           new Div(new Inline(ICON_CROSSED_SWORDS).class("self-center"))
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
+            .withOnclick(inviteDuel)
             .withId("invite-to-play-btn"),
         ];
         break;
@@ -344,16 +381,22 @@ export default class DashboardPage extends Page {
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
+            .withOnclick(
+              removeFriend(
+                `/api/v1/user/friends/requests/outgoing/${this.username}`,
+                "You are going to cancel a friend request",
+              ),
+            )
             .withId("cancel-friend-req-btn"),
           new Div(new Inline(ICON_CROSSED_SWORDS).class("self-center"))
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
+            .withOnclick(inviteDuel)
             .withId("invite-to-play-btn"),
         ];
         break;
-      case undefined:
-      case "friend":
+      case "friends":
         buttons = [
           new Div(
             new Inline(ICON_CROSSED_SWORDS).class("self-center"),
@@ -363,17 +406,27 @@ export default class DashboardPage extends Page {
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
+            .withOnclick(inviteDuel)
             .withId("invite-to-play-btn"),
           new Div(new Inline(ICON_FRIEND_ADDED).class("self-center"))
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
+            .withOnclick(
+              removeFriend(
+                `/api/v1/user/friends/${this.username}`,
+                "You are going to remove this user from your friends",
+              ),
+            )
             .withId("remove-friend-btn"),
         ];
         break;
+      // case undefined:
     }
 
-    return [new Div(...buttons).class("col-span-2 flex gap-4")];
+    return new Div(...buttons)
+      .class("col-span-2 flex gap-4")
+      .withId("interaction-div") as Div;
   }
 
   transitionIn(): null | void {
@@ -419,19 +472,15 @@ export default class DashboardPage extends Page {
 
   async loadData(): Promise<void> {
     let path = "/user";
-    if (this.username === APP.userInfo?.username) {
-      path = `/user/${this.username}`;
+    if (this.username !== APP.userInfo?.username) {
+      path = `/users/${this.username}`;
     }
-    path = "/user";
 
-    const thenJson = (x: Promise<Response>) =>
-      x.then(async (r) => await r.json()).catch(console.error);
-
-    const [resp, friends, stats] = await Promise.all([
-      API.fetch(path),
-      thenJson(API.fetch(`${path}/friends`)),
-      thenJson(API.fetch(`${path}/stats`)),
-    ]);
+    const resp = await API.fetch(path).catch(console.error);
+    if (!resp) {
+      alert("Failed to fetch user info");
+      return;
+    }
 
     if (resp.status === 401) {
       APP.onLogout();
@@ -442,10 +491,6 @@ export default class DashboardPage extends Page {
       this.router.navigate(404, false);
       return;
     }
-    if (!friends || !stats) {
-      return;
-    }
-
     const userInfo = (await resp.json().catch(console.error)) as
       | void
       | ApiPaths["/users/{username}"]["get"]["responses"]["200"]["content"]["application/json"];
@@ -453,13 +498,26 @@ export default class DashboardPage extends Page {
       return;
     }
     this.userInfo = userInfo;
-    this.friends =
-      friends as ApiPaths["/users/{username}/friends"]["get"]["responses"]["200"]["content"]["application/json"];
+
+    let stats;
+    if (path === "/user") {
+      stats = await API.fetch(`${path}/stats`)
+        .then((r) => r.json())
+        .catch(console.error);
+    } else {
+      stats = await API.fetch(`/users/${this.userInfo.id}/stats`)
+        .then((r) => r.json())
+        .catch(console.error);
+    }
+    if (!stats) {
+      alert("Failed to fetch game stats for the user");
+      return;
+    }
     this.stats =
       stats as ApiPaths["/users/{username}/stats"]["get"]["responses"]["200"]["content"]["application/json"];
 
     const ids = new Set(
-      this.stats.recentMatches.flatMap((x) => x.players).map((x) => x.id),
+      this.stats.recentMatches.flatMap((x) => x.players).map((x) => x.id) ?? [],
     );
     let proms = [];
     const userInfos: Map<number | string, UserInfo> = new Map();
@@ -480,8 +538,35 @@ export default class DashboardPage extends Page {
       return;
     }
 
+    await this.updateFriendsState();
+
     this.userInfoTile().redrawInner();
     this.friendsTile().redrawInner();
     this.matchHistoryTile().redrawInner();
+  }
+
+  async updateFriendsState() {
+    if (this.friendState === "self") {
+      try {
+        const resp = await API.fetch("/user/friends");
+        if (!resp.ok) {
+          throw `${resp.status} ${await resp.text()}`;
+        }
+        this.friends = await resp.json();
+      } catch (e: any) {
+        alert("Failed to fetch friends data: " + e);
+      }
+      return;
+    }
+    try {
+      const frensResp = await API.fetch(`/user/friends/${this.username}`);
+      if (frensResp.status === 404) {
+        this.friendState = null;
+      } else if (frensResp.ok) {
+        this.friendState = (await frensResp.json()).state;
+      }
+    } catch (e: any) {
+      alert("Error when checking friendship status: " + e);
+    }
   }
 }

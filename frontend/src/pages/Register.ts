@@ -1,7 +1,14 @@
 import { API } from "../Api";
 import { APP } from "../App";
 import Router, { Page } from "../Router";
-import { Div, AElement, Textbox, Paragraph, Button } from "./elements/Elements";
+import {
+  Div,
+  AElement,
+  Textbox,
+  Paragraph,
+  Button,
+  Inline,
+} from "./elements/Elements";
 import { paths as ApiPaths } from "../PublicAPI";
 import { HOW_TO_CENTER_A_DIV, INPUT_BOX_OUTLINE } from "./elements/CssUtils";
 import {
@@ -9,6 +16,7 @@ import {
   passwordValidator,
   usernameValidator,
 } from "../FieldValidators";
+import { GITHUB_LOGO } from "./elements/SvgIcons";
 
 export default class RegisterPage extends Page {
   readonly userText = new Textbox("username");
@@ -16,12 +24,22 @@ export default class RegisterPage extends Page {
   readonly passText = new Textbox("password").password();
   readonly passText2 = new Textbox("password2").password();
   readonly regButton: Button;
+  readonly oauthButton: Button;
 
   private loggedOn: boolean = false;
 
   constructor(router: Router) {
     super(router, false);
     this.loggedOn = !!APP.userInfo;
+
+    this.oauthButton = new Button(
+      new Inline(GITHUB_LOGO),
+      new Paragraph("Sign in with GitHub").class("p-2 text-xl"),
+    )
+      .class("flex")
+      .class(HOW_TO_CENTER_A_DIV)
+      .withOnclick(this.callOauth.bind(this))
+      .withId("oauth-btn") as Button;
 
     this.regButton = new Button(
       new Paragraph("Sign up →").class(
@@ -32,6 +50,25 @@ export default class RegisterPage extends Page {
       .class("flex")
       .withOnclick(this.trySignup.bind(this))
       .withId("sign-in-btn") as Button;
+  }
+
+  async callOauth() {
+    let resp;
+    try {
+      resp = await fetch("/api/v1/user/oauth/github", { method: "POST" });
+    } catch (e: any) {
+      alert("Failed to sign in" + (e && ": " + e));
+      return;
+    }
+    if (!resp.ok) {
+      const text = await resp.text();
+      alert("Failed to sign in" + (text && ": " + text));
+      return;
+    }
+
+    const url = (await resp.json()).redirectUrl;
+
+    location.href = url;
   }
 
   async trySignup() {
@@ -178,6 +215,8 @@ export default class RegisterPage extends Page {
           .withId("password2-area")
           .withOnclick(() => this.passText2.byId()?.focus()),
         this.regButton,
+        new Paragraph("or").class("text-l mt-6 -mb-4"),
+        this.oauthButton,
       )
         .class("absolute top-1/2 left-1/2 transform")
         .class("-translate-y-1/2 -translate-x-1/2")
