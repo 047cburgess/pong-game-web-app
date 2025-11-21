@@ -1,9 +1,14 @@
+import { API } from "./Api";
+import { APP } from "./App";
 import { AElement } from "./pages/elements/Elements";
 
 export abstract class Page {
   readonly router: Router;
 
-  constructor(router: Router) {
+  constructor(router: Router, needsAuth: boolean = true) {
+    if (needsAuth && !APP.userInfo) {
+      throw new NavError(401);
+    }
     this.router = router;
   }
 
@@ -66,6 +71,19 @@ export default class Router {
     if (this.navPending) {
       return;
     }
+    API.fetch("/user").then(async (resp) => {
+      if (resp.ok && !APP.userInfo) {
+        console.log(resp);
+        APP.onLogin(await resp.json());
+        return;
+      }
+      if (resp.status === 401 && APP.userInfo) {
+        this.navPending !== undefined && clearTimeout(this.navPending);
+        delete this.navPending;
+        APP.onLogout();
+        this.navigate("/login");
+      }
+    }).catch(console.error);
     let routes = this.routes;
     if (typeof path === 'number') {
       routes = this.errors;
@@ -74,6 +92,7 @@ export default class Router {
     let cleanPath = path.startsWith("/") ? path.slice(1) : path;
     if (this.currentPath === cleanPath) {
       this.redraw();
+      this.currentPage?.bindEvents();
       return;
     }
     this.currentPath = cleanPath;

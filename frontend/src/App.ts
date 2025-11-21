@@ -27,18 +27,19 @@ export const getUsername = (): string | null => {
 
 class RedirToLogin extends Page {
   constructor(router: Router) {
-    super(router);
+    super(router, false);
   }
 
   content(): AElement[] {
-    return [new Div(
-      new Paragraph("Redirecting to login...")
-        .class(MUTED_TEXT)
-        .class("text-4xl")
-    ).class("absolute top-1/2 left-1/2")
-      .class("transform -translate-y-1/2 -translate-x-1/2")
-      .class("flex flex-col select-none font-bold")
-      .class(HOW_TO_CENTER_A_DIV)];
+    return [];
+    // return [new Div(
+    //   new Paragraph("Redirecting to login...")
+    //     .class(MUTED_TEXT)
+    //     .class("text-4xl")
+    // ).class("absolute top-1/2 left-1/2")
+    //   .class("transform -translate-y-1/2 -translate-x-1/2")
+    //   .class("flex flex-col select-none font-bold")
+    //   .class(HOW_TO_CENTER_A_DIV)];
   }
 
   bindEvents() {
@@ -56,7 +57,7 @@ class App {
   userInfo: SelfInfo | null;
 
   constructor(userInfo: SelfInfo | null) {
-    this.evtSource = new EventSource("/api/events");
+    this.evtSource = new EventSource("/api/v1/events");
     this.evtSource.onmessage = (_e) => {
       // TODO(Vaiva): SSE handler
     };

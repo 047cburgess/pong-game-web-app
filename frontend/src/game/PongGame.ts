@@ -98,8 +98,8 @@ export class PongApp {
   // takes base address, join token, their userid (if registered), then up to 3 other tokens for guests
   constructor(addr: string, token: string, userId?: number, t2?: string, t3?: string, t4?: string) {
     this.isViewer = token.startsWith("view_");
-    if (this.isViewer){
-    	console.log("Entered babylon constructor: viewer");
+    if (this.isViewer) {
+      console.log("Entered babylon constructor: viewer");
     }
     this.myUserId = userId;
     this.isLocal = !!(t2 || t3 || t4);
@@ -181,33 +181,33 @@ export class PongApp {
 
     // ADDED: ONLY IF IT'S A PLAYER SET UP THE KEY EVENTS
     if (!this.isViewer) {
-	    this.scene.onKeyboardObservable.add((kbInfo) => {
-	      [this.player1, this.player2, this.player3, this.player4].forEach((p) => {
-	        if (!p) return;
-	        switch (kbInfo.type) {
-	          case KeyboardEventTypes.KEYDOWN:
-	            switch (kbInfo.event.key) {
-	              case p.downKey:
-	                p.state.down = true;
-	                break;
-	              case p.upKey:
-	                p.state.up = true;
-	                break;
-	            }
-	            break;
-	          case KeyboardEventTypes.KEYUP:
-	            switch (kbInfo.event.key) {
-	              case p.downKey:
-	                p.state.down = false;
-	                break;
-	              case p.upKey:
-	                p.state.up = false;
-	                break;
-	            }
-	            break;
-	        }
-	      });
-	    });
+      this.scene.onKeyboardObservable.add((kbInfo) => {
+        [this.player1, this.player2, this.player3, this.player4].forEach((p) => {
+          if (!p) return;
+          switch (kbInfo.type) {
+            case KeyboardEventTypes.KEYDOWN:
+              switch (kbInfo.event.key) {
+                case p.downKey:
+                  p.state.down = true;
+                  break;
+                case p.upKey:
+                  p.state.up = true;
+                  break;
+              }
+              break;
+            case KeyboardEventTypes.KEYUP:
+              switch (kbInfo.event.key) {
+                case p.downKey:
+                  p.state.down = false;
+                  break;
+                case p.upKey:
+                  p.state.up = false;
+                  break;
+              }
+              break;
+          }
+        });
+      });
     }
 
     this.camera = new ArcRotateCamera(
@@ -277,14 +277,14 @@ export class PongApp {
 
         const debugtext = document.getElementById("debugtext");
         if (debugtext) {
-	  // Show scores for all players
-	  const scores = this.gameState.players.map(p => p.score).join('  ');
-  	// show count down
+          // Show scores for all players
+          const scores = this.gameState.players.map(p => p.score).join('  ');
+          // show count down
           if (this.gameState.pauseCd > 0) {
             const countdownSeconds = Math.ceil(this.gameState.pauseCd * this.params.tickMs / 1000);
-	    debugtext.textContent = `${scores}  |  ${countdownSeconds}`;
+            debugtext.textContent = `${scores}  |  ${countdownSeconds}`;
           } else {
-	    debugtext.textContent = `${scores}  |  ${Math.floor(this.gameState.time / 1000)}`;
+            debugtext.textContent = `${scores}  |  ${Math.floor(this.gameState.time / 1000)}`;
           }
         }
         if (typeof this.prevState.ball.lastRefl === "number") {
@@ -294,6 +294,9 @@ export class PongApp {
         const avgTime = this.tickAvg.reduce((p, c) => p + c, 0) / this.tickAvg.length;
         const lt = Date.now();
         const dt = Math.min(4, (lt - this.lastTime) / avgTime);
+        if (!dt) {
+          return;
+        }
         let x = lerp(this.prevState.ball.pos.x + this.prevState.ball.vel.x * dt,
           this.gameState.ball.pos.x + this.gameState.ball.vel.x * (dt - 1), dt);
         let y = lerp(this.prevState.ball.pos.y + this.prevState.ball.vel.y * dt,

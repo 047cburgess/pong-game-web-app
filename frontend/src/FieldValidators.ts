@@ -13,8 +13,10 @@ export const usernameValidator: FieldValidator = (username) => {
     errors.push("Username too long");
   }
 
-  if (!username.match(/^[a-zA-Z0-9_.]*$/)) {
+  if (!username.match(/^[a-zA-Z0-9_]*$/)) {
     errors.push("Invalid characters");
+  } else if (!username.match(/[a-zA-Z]/)) {
+    errors.push("Must contain letters");
   }
 
   if (errors.length) {

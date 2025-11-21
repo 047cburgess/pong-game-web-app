@@ -8,6 +8,9 @@ class ApiAccessor {
   }
 
   async fetch(input: RequestInfo | URL) {
+    if (input && typeof input === "string" && input[0] !== '/') {
+      input = "/" + input;
+    }
     return await fetch(this.baseRoute + input);
   }
 }

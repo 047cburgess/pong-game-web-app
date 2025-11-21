@@ -147,6 +147,7 @@ export default class GameLocalPage extends Page {
                     this.resetGame();
                     this.gameState = "setup";
                     this.renderGameState();
+                    this.bindEvents();
                   }),
 
                 new Button(new Paragraph("Exit").class("py-3 px-8"))
@@ -174,10 +175,7 @@ export default class GameLocalPage extends Page {
 
   bindEvents(): void {
     // Hide page header for fullscreen
-    const header = document.querySelector('header');
-    if (header) {
-      (header as HTMLElement).style.display = 'none';
-    }
+    APP.headerRoot.style.display = 'none';
 
     this.renderGameState();
     this.bindSetupButtons();
@@ -367,7 +365,7 @@ export default class GameLocalPage extends Page {
 
     // Send ready signal for all connected players
     [this.gameInstance.player1, this.gameInstance.player2,
-     this.gameInstance.player3, this.gameInstance.player4]
+    this.gameInstance.player3, this.gameInstance.player4]
       .filter((p): p is NonNullable<typeof p> => p !== undefined && p.ws.readyState === WebSocket.OPEN)
       .forEach(p => {
         p.ws.send(JSON.stringify({ type: "ready" }));
@@ -482,7 +480,7 @@ export default class GameLocalPage extends Page {
         console.log('Binding play again button');
         buttons[1].onclick = () => {
           console.log('Play again clicked');
-          this.restoreHeader();
+          // this.restoreHeader();
           this.resetGame();
           this.gameState = "setup";
           this.renderGameState();
@@ -503,8 +501,7 @@ export default class GameLocalPage extends Page {
   }
 
   private restoreHeader(): void {
-    const header = document.querySelector<HTMLElement>('header');
-    if (header) header.style.display = '';
+    APP.headerRoot.style.display = '';
   }
 
   private displayFinalScores(): void {

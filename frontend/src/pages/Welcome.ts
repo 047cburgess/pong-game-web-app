@@ -17,7 +17,7 @@ export default class WelcomePage extends Page {
   nextPage: string = "/login";
 
   constructor(router: Router) {
-    super(router);
+    super(router, false);
 
     this.titleCard = new Div(
       new Paragraph("Welcome to"),

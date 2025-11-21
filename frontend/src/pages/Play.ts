@@ -7,7 +7,7 @@ type MenuState = "main" | "local" | "online";
 
 export default class PlayPage extends Page {
   private menuState: MenuState = "main";
-  private menuContainerId = "play-menu-container";
+  private menuContainer: Div = new Div();
 
   constructor(router: Router) {
     super(router);
@@ -17,20 +17,23 @@ export default class PlayPage extends Page {
   }
 
   content(): AElement[] {
+    this.menuContainer = new Div(
+      this.renderMainMenu()
+    ).withId("play-menu-container")
+      .class("flex flex-col gap-4") as Div;
+
     return [
-      new Div(
-        new Div().withId(this.menuContainerId).class("flex flex-col gap-4")
-      )
+      new Div(this.menuContainer)
         .class("flex flex-col justify-center items-center min-h-screen p-12")
     ];
   }
 
   bindEvents(): void {
-    this.renderMenu();
+    this.menuContainer.bindEvents();
   }
 
   private renderMenu(): void {
-    const container = document.getElementById(this.menuContainerId);
+    const container = this.menuContainer.byId();
     if (!container) return;
 
     let menuContent: AElement;
@@ -47,8 +50,8 @@ export default class PlayPage extends Page {
         break;
     }
 
-    container.innerHTML = menuContent.render();
-    menuContent.bindEvents();
+    this.menuContainer.contents[0] = menuContent;
+    this.menuContainer.redrawInner();
   }
 
   private renderMainMenu(): AElement {
@@ -57,7 +60,7 @@ export default class PlayPage extends Page {
         .class("text-2xl text-neutral-400 mb-6 text-center"),
 
       new Div(
-	// Play local button
+        // Play local button
         new Button(
           new Div(
             new Header(2, "Local").class("text-2xl font-bold m-0"),

@@ -7,14 +7,14 @@ import { HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
 
 export default class GithubCallback extends Page {
   constructor(router: Router) {
-    super(router);
+    super(router, false);
   }
 
   content(): AElement[] {
     return [
       new Div(new Paragraph("Please wait..."))
         .class(HOW_TO_CENTER_A_DIV)
-        .class("absolute top-1/2 left-1/2")
+        .class("absolute top-1/2 left-1/2 text-neutral-600")
         .class("transform -translate-y-1/2 -translate-x-1/2")
         .class("flex flex-col select-none font-bold")
     ];

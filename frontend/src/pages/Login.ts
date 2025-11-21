@@ -16,7 +16,7 @@ export default class LoginPage extends Page {
   private loggedOn: boolean = false;
 
   constructor(router: Router) {
-    super(router);
+    super(router, false);
     this.loggedOn = !!APP.userInfo;
 
     this.loginButton = new Button(
@@ -50,7 +50,12 @@ export default class LoginPage extends Page {
         }
       });
     } catch (e: any) {
-      // TODO
+      alert("Failed to sign in" + (e && ": " + e));
+      return;
+    }
+    if (!resp.ok) {
+      const text = await resp.text();
+      alert("Failed to sign in" + (text && ": " + text));
       return;
     }
 

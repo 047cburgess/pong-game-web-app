@@ -16,7 +16,7 @@ export default class RegisterPage extends Page {
   private loggedOn: boolean = false;
 
   constructor(router: Router) {
-    super(router);
+    super(router, false);
     this.loggedOn = !!APP.userInfo;
 
     this.regButton = new Button(
@@ -52,11 +52,12 @@ export default class RegisterPage extends Page {
         },
       });
     } catch (e: any) {
-      // TODO
+      alert("Failed to sign up" + (e && ": " + e));
       return;
     }
     if (!resp.ok) {
-      // TODO
+      const text = await resp.text();
+      alert("Failed to sign up" + (text && ": " + text));
       return;
     }
 

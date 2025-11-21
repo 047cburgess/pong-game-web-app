@@ -21,7 +21,7 @@ export default class PageHeader extends Page {
   navButtons: AElement[];
 
   constructor(router: Router, userInfo: SelfInfo | null) {
-    super(router);
+    super(router, false);
     this.userInfo = userInfo;
     this.buttons = [
       makeButton("Register", "header-nav-register", "register"),
@@ -32,7 +32,7 @@ export default class PageHeader extends Page {
       {
         elem:
           new Div(
-            new Image("/api/v1/user/avatars/" + userInfo?.username)
+            new Image("/api/v1/user/avatars/" + userInfo?.username + ".webp")
           )
             .class("aspect-square bg-zinc-700/25 h-10 rounded-full self-center overflow-hidden flex")
             .class(HOW_TO_CENTER_A_DIV)
@@ -61,7 +61,8 @@ export default class PageHeader extends Page {
         new Div(...this.navButtons)
           .class("flex flex-rot gap-4"),
       ).class("flex flex-rot justify-between")
-        .class("h-full w-screen p-4 pl-12 pr-12 select-none font-bold"),
+        .class("h-full w-screen p-4 pl-12 pr-12 select-none font-bold")
+        .withId("page-header-div"),
     ];
   }
 
