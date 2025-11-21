@@ -77,7 +77,8 @@ export class UploadAvatarCommand extends CommandBase {
 		} catch {
 			return { success: false, errors: [AvatarErrors.SAVE_FAILED] };
 		}
-
+		user.avatarUrl = `/api/v1/user/avatars/${user.name}.webp`;
+		this.userManager.saveUser(user_id);
 		return { success: true, errors: [] };
 	}
 }
