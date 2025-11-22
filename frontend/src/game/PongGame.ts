@@ -600,10 +600,10 @@ export class PongApp {
 }
 
 const PLAYER_COLORS = [
-  new Color3(0.83, 0.42, 0.64),
-  new Color3(0.64, 0.83, 0.42),
-  new Color3(0.42, 0.64, 0.83),
-  new Color3(0.83, 0.83, 0.21),
+  new Color3(0.956, 0.447, 0.714), // Pink (Tailwind pink-400)
+  new Color3(0.525, 0.937, 0.675), // Green (Tailwind green-300)
+  new Color3(0.576, 0.773, 0.992), // Blue (Tailwind blue-300)
+  new Color3(0.992, 0.878, 0.278), // Yellow (Tailwind yellow-300)
 ];
 
 (window as any).PongApp = PongApp;

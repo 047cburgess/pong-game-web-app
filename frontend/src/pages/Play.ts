@@ -130,7 +130,7 @@ export default class PlayPage extends Page {
         .class("w-full max-w-md")
         .withId("btn-local-tournament")
         .withOnclick(() => {
-          this.router.navigate("/tournaments/local");
+          this.router.navigate("/games/tournament/local");
         }),
 
       // Back button

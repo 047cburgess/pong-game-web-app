@@ -13,12 +13,14 @@ import {
 } from "./elements/Elements";
 import {
   DEFAULT_BUTTON,
+  PRIMARY_BUTTON,
   TIMER_COUNTDOWN,
   TIMER_NORMAL,
   PLAYER_COLOURS,
 } from "./elements/CssUtils";
 import { PongApp } from "../game/PongGame";
 import { PlayerAvatar, GameHUD, ColoredText } from "./elements/GameElements";
+import { createLocalGame, GameKey } from "../utils/gameUtils";
 
 type GameState = "setup" | "waiting" | "playing" | "finished";
 
@@ -26,16 +28,13 @@ export default class GameLocalPage extends Page {
   private gameState: GameState = "setup";
   private canvasId = "gameCanvas";
   private gameInstance: PongApp | null = null;
-  private gameKeys: { key: string; gameId: string }[] = [];
+  private gameKeys: GameKey[] = [];
   private gameId: string = "";
   private nPlayers: number = 2;
   private finalScores: { player: number; score: number }[] = [];
   private gameDuration: number = 0;
+  private gameSaved: boolean = false;
   private readonly CONTROL_KEYS = ["W/S", "J/U", "T/Y", "V/B"];
-
-  constructor(router: Router) {
-    super(router);
-  }
 
   content(): AElement[] {
     return [
@@ -117,8 +116,7 @@ export default class GameLocalPage extends Page {
                 new Button(
                   new Paragraph("Start Game").class("text-xl py-4 px-12"),
                 )
-                  .class(DEFAULT_BUTTON)
-                  .class("bg-green-600 hover:bg-green-700")
+                  .class(PRIMARY_BUTTON)
                   .withId("ready-btn")
                   .withOnclick(() => this.startGame()),
               ).class("flex justify-center"),
@@ -155,6 +153,7 @@ export default class GameLocalPage extends Page {
                 new Button(new Paragraph("Play Again").class("py-3 px-8"))
                   .class(DEFAULT_BUTTON)
                   .class("bg-green-600 hover:bg-green-700")
+                  .withId("play-again-btn")
                   .withOnclick(() => {
                     this.resetGame();
                     this.gameState = "setup";
@@ -164,6 +163,7 @@ export default class GameLocalPage extends Page {
 
                 new Button(new Paragraph("Exit").class("py-3 px-8"))
                   .class(DEFAULT_BUTTON)
+                  .withId("exit-btn")
                   .withOnclick(() => {
                     // Restore header
                     const header = document.querySelector("header");
@@ -249,25 +249,10 @@ export default class GameLocalPage extends Page {
 
     try {
       console.log("Calling api to get new local game");
-      const response = await fetch("/api/v1/games/local/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nPlayers }),
-      });
+      this.gameKeys = await createLocalGame(nPlayers);
+      this.gameId = this.gameKeys[0].gameId;
 
-      console.log("Response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error("Failed to create game: " + response.status);
-      }
-
-      const data = await response.json();
-      this.gameKeys = data.gameKeys;
-      this.gameId = data.gameKeys[0].gameId;
-
-      console.log("Local game created:", data);
+      console.log("Local game created:", this.gameKeys);
 
       this.initialiseGame();
 
@@ -322,16 +307,14 @@ export default class GameLocalPage extends Page {
     const hudContainer = document.getElementById("game-hud");
     if (!hudContainer) return;
 
-    const players = Array.from(
-      { length: this.nPlayers },
-      (_, i) =>
-        new PlayerAvatar(
-          `Player ${i + 1}`,
-          `score-${i}`,
-          PLAYER_COLOURS[i],
-          i === 0 || i === 3 ? "left" : "right",
-        ),
-    );
+    const players = Array.from({ length: this.nPlayers }, (_, i) => {
+      return new PlayerAvatar(
+        `Player ${i + 1}`,
+        `score-${i}`,
+        PLAYER_COLOURS[i],
+        i === 0 || i === 3 ? "left" : "right",
+      );
+    });
 
     hudContainer.innerHTML = new GameHUD(players)
       .withId("game-hud-content")
@@ -346,6 +329,7 @@ export default class GameLocalPage extends Page {
 
     for (let i = 0; i < this.nPlayers; i++) {
       if (i > 0) elements.push(new Inline("  |  "));
+
       elements.push(
         new ColoredText(`Player ${i + 1}`, PLAYER_COLOURS[i]),
         new Inline(`: ${this.CONTROL_KEYS[i]}`),
@@ -403,6 +387,9 @@ export default class GameLocalPage extends Page {
 
     // Show permanent controls display
     this.updatePermanentControls();
+
+    const canvas = document.getElementById(this.canvasId) as HTMLCanvasElement;
+    if (canvas) canvas.focus();
 
     this.startUIUpdates(startTime);
   }
@@ -480,7 +467,11 @@ export default class GameLocalPage extends Page {
       }));
     }
 
+    // Capture duration from game_end message
+    this.gameDuration = msg.duration || 0;
+
     console.log("Final scores:", this.finalScores);
+    console.log("Game duration:", this.gameDuration);
 
     this.gameState = "finished";
     this.renderGameState();
@@ -492,24 +483,18 @@ export default class GameLocalPage extends Page {
 
     setTimeout(() => {
       const saveBtn = document.getElementById("save-btn");
-      const buttons = document.querySelectorAll<HTMLButtonElement>(
-        "#gameover-overlay button",
-      );
+      const playAgainBtn = document.getElementById("play-again-btn");
+      const exitBtn = document.getElementById("exit-btn");
 
-      console.log("Found buttons:", buttons.length);
-
-      // Save game (optional)
       if (saveBtn) {
         console.log("Binding save button");
         saveBtn.onclick = () => this.saveGame();
       }
 
-      // Play again
-      if (buttons[1]) {
+      if (playAgainBtn) {
         console.log("Binding play again button");
-        buttons[1].onclick = () => {
+        playAgainBtn.onclick = () => {
           console.log("Play again clicked");
-          // this.restoreHeader();
           this.resetGame();
           this.gameState = "setup";
           this.renderGameState();
@@ -517,10 +502,9 @@ export default class GameLocalPage extends Page {
         };
       }
 
-      // Exit to dashboard
-      if (buttons[2]) {
+      if (exitBtn) {
         console.log("Binding exit button");
-        buttons[2].onclick = () => {
+        exitBtn.onclick = () => {
           console.log("Exit clicked");
           this.restoreHeader();
           this.router.navigate("/dashboard");
@@ -582,6 +566,12 @@ export default class GameLocalPage extends Page {
   }
 
   private async saveGame(): Promise<void> {
+    // Prevent duplicate saves
+    if (this.gameSaved) {
+      alert("This game has already been saved.");
+      return;
+    }
+
     try {
       const sorted = [...this.finalScores].sort((a, b) => b.score - a.score);
       const topScore = sorted[0].score;
@@ -600,7 +590,7 @@ export default class GameLocalPage extends Page {
               APP.userInfo!.id
             : `Player${winners[0].player}`
           : undefined,
-        duration: `PT${Math.floor(this.gameDuration / 1000)}S`,
+        duration: this.gameDuration, // Already in ISO 8601 format from backend
       };
 
       const response = await fetch("/api/v1/user/games/local", {
@@ -610,13 +600,8 @@ export default class GameLocalPage extends Page {
       });
 
       if (response.ok || response.status === 204) {
-        const saveBtn = document.getElementById(
-          "save-btn",
-        ) as HTMLButtonElement;
-        if (saveBtn) {
-          saveBtn.disabled = true;
-          saveBtn.textContent = "Saved.";
-        }
+        this.gameSaved = true;
+        alert("Game saved successfully!");
       } else {
         throw new Error("Failed to save game");
       }
@@ -638,10 +623,18 @@ export default class GameLocalPage extends Page {
       container.innerHTML = "";
     }
 
+    // Hide and clear permanent controls display
+    const controlsDisplay = document.getElementById("controls-display");
+    if (controlsDisplay) {
+      controlsDisplay.classList.add("hidden");
+      controlsDisplay.innerHTML = "";
+    }
+
     this.gameKeys = [];
     this.gameId = "";
     this.finalScores = [];
     this.gameDuration = 0;
+    this.gameSaved = false;
     this.nPlayers = 2;
   }
 }
