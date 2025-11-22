@@ -3,6 +3,8 @@ import Router, { Page } from "../Router";
 import { AElement, Div, Paragraph, Button, Header } from "./elements/Elements";
 import {
   DEFAULT_BUTTON,
+  PRIMARY_BUTTON,
+  EVIL_RED_BUTTON,
   TIMER_COUNTDOWN,
   TIMER_NORMAL,
   PLAYER_COLOURS,
@@ -39,8 +41,7 @@ export default class QueuePage extends Page {
     this.leaveQueueBtn = new Button(
       new Paragraph("Leave Queue").class("py-3 px-8"),
     )
-      .class(DEFAULT_BUTTON)
-      .class("bg-red-600 hover:bg-red-700")
+      .class(EVIL_RED_BUTTON)
       .withId("leave-queue-btn")
       .withOnclick(() => this.leaveQueue()) as Button;
 
@@ -69,8 +70,7 @@ export default class QueuePage extends Page {
     this.readyBtn = new Button(
       new Paragraph("Ready!").class("text-xl py-4 px-12"),
     )
-      .class(DEFAULT_BUTTON)
-      .class("bg-green-600 hover:bg-green-700")
+      .class(PRIMARY_BUTTON)
       .withId("ready-btn")
       .withOnclick(() => this.startGame()) as Button;
 
@@ -411,6 +411,11 @@ export default class QueuePage extends Page {
           this.queueState = "playing";
           this.renderQueueState();
           this.startUIUpdates();
+          // Focus canvas so keyboard input works immediately
+          const canvas = document.getElementById(
+            "gameCanvas",
+          ) as HTMLCanvasElement;
+          if (canvas) canvas.focus();
         }
 
         if (msg.type === "game_end") {

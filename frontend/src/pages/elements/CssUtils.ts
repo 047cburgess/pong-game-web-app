@@ -17,6 +17,17 @@ export const DEFAULT_BUTTON = [
   "duration-200",
 ];
 
+export const PRIMARY_BUTTON = [
+  "rounded-xl",
+  "select-none",
+  "outline-2",
+  "outline-pink-400",
+  "bg-pink-400",
+  "hover:bg-pink-500",
+  "transition",
+  "duration-200",
+];
+
 export const EVIL_RED_BUTTON = [
   "rounded-xl",
   "select-none",
@@ -53,13 +64,20 @@ export const INPUT_BOX_RED_OUTLINE = [
   "focus:outline-red-500",
 ];
 
-export const TIMER_COUNTDOWN = ["font-bold", "text-6xl", "text-pink-500"];
+export const TIMER_COUNTDOWN = ["font-bold", "text-6xl", "text-pink-400"];
 
 export const TIMER_NORMAL = ["font-bold", "text-5xl", "text-white"];
 
 export const PLAYER_COLOURS = [
-  "rgb(212, 107, 163)", // Pink
-  "rgb(163, 212, 107)", // Green
-  "rgb(107, 163, 212)", // Blue
-  "rgb(212, 212, 54)", // Yellow
+  "rgb(244, 114, 182)", // Pink (Tailwind pink-400)
+  "rgb(134, 239, 172)", // Green (Tailwind green-300)
+  "rgb(147, 197, 253)", // Blue (Tailwind blue-300)
+  "rgb(253, 224, 71)", // Yellow (Tailwind yellow-300)
+];
+
+export const PLAYER_COLOUR_CLASSES = [
+  "pink-400",
+  "green-300",
+  "blue-300",
+  "yellow-300",
 ];

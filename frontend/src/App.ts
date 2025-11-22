@@ -18,6 +18,7 @@ import GithubCallback from "./pages/OauthCallback";
 import SettingsPage from "./pages/Settings";
 import PlayPage from "./pages/Play";
 import GameLocalPage from "./pages/GameLocal";
+import GameTournamentLocalPage from "./pages/GameTournamentLocal";
 import { CustomGamePage, WaitingMenu } from "./pages/CustomGame";
 import QueuePage from "./pages/Queue";
 
@@ -89,6 +90,7 @@ class App {
     this.router.addRoute("settings", SettingsPage);
     this.router.addRoute("play", PlayPage);
     this.router.addRoute("games/local", GameLocalPage);
+    this.router.addRoute("games/tournament/local", GameTournamentLocalPage);
     this.router.addRoute("queue", QueuePage);
 
     this.router.navigate(location.pathname + location.search, false);
