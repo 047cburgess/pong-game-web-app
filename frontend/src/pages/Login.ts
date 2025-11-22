@@ -12,7 +12,6 @@ import {
 import { paths as ApiPaths } from "../PublicAPI";
 import { HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
 import { GITHUB_LOGO } from "./elements/SvgIcons";
-import { usernameValidator } from "../FieldValidators";
 
 export default class LoginPage extends Page {
   readonly userText = new Textbox("username");
@@ -87,9 +86,13 @@ export default class LoginPage extends Page {
       return;
     }
 
-    const url = (await resp.json()).redirectUrl;
+    const url = new URL((await resp.json()).redirectUrl);
+    url.searchParams.set(
+      "redirect_uri",
+      `${window.location.origin}/user/oauth/github/callback`,
+    );
 
-    location.href = url;
+    window.open(url, "_self");
   }
 
   content(): AElement[] {

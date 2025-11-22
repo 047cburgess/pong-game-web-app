@@ -50,12 +50,6 @@ export default class PageHeader extends Page {
       makeButton(ICON_QUIT, "header-nav-logout", "logout"),
     ];
 
-    if (userInfo?.avatarUrl) {
-      (this.buttons[this.buttons.length - 1].elem as Div).contents = [
-        new Image(userInfo.avatarUrl),
-      ];
-    }
-
     if (this.userInfo) {
       this.navButtons = this.buttons.slice(2).map((e) => e.elem);
     } else {

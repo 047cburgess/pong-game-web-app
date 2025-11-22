@@ -139,15 +139,20 @@ export default class SettingsPage extends Page {
           );
           this.avatarDiv.redrawInner();
 
-          const avatarUrl2 = new PageHeader(this.router, APP.userInfo);
-          (avatarUrl2.content()[0] as Div).redrawInner();
-          avatarUrl2.bindEvents();
+          const header = new PageHeader(this.router, APP.userInfo);
+          (header.content()[0] as Div).redrawInner();
+          header.bindEvents();
         }
       };
     }
   }
 
   async updateUsername() {
+    if (this.usernameText.validationErrors !== null) {
+      alert("Please check that your username is valid");
+      return;
+    }
+
     const resp = await fetch("/api/v1/user/username", {
       method: "PUT",
       body: JSON.stringify({

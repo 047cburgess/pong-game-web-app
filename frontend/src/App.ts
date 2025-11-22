@@ -9,8 +9,7 @@ import PageHeader from "./pages/Header";
 import { API, SelfInfo } from "./Api";
 import FriendsPage from "./pages/Friends";
 import MatchHistoryPage from "./pages/MatchHistory";
-import { AElement, Div, Paragraph } from "./pages/elements/Elements";
-import { HOW_TO_CENTER_A_DIV, MUTED_TEXT } from "./pages/elements/CssUtils";
+import { AElement } from "./pages/elements/Elements";
 import RegisterPage from "./pages/Register";
 import TournamentHistoryPage from "./pages/TournamentHistory";
 import LogoutPage from "./pages/Logout";
@@ -18,7 +17,7 @@ import GithubCallback from "./pages/OauthCallback";
 import SettingsPage from "./pages/Settings";
 import PlayPage from "./pages/Play";
 import GameLocalPage from "./pages/GameLocal";
-import { CustomGamePage, WaitingMenu } from "./pages/CustomGame";
+import { CustomGamePage } from "./pages/CustomGame";
 import QueuePage from "./pages/Queue";
 
 export const getUsername = (): string | null => {
@@ -36,14 +35,6 @@ class RedirToLogin extends Page {
 
   content(): AElement[] {
     return [];
-    // return [new Div(
-    //   new Paragraph("Redirecting to login...")
-    //     .class(MUTED_TEXT)
-    //     .class("text-4xl")
-    // ).class("absolute top-1/2 left-1/2")
-    //   .class("transform -translate-y-1/2 -translate-x-1/2")
-    //   .class("flex flex-col select-none font-bold")
-    //   .class(HOW_TO_CENTER_A_DIV)];
   }
 
   bindEvents() {
@@ -61,14 +52,13 @@ class App {
   userInfo: SelfInfo | null;
 
   constructor(userInfo: SelfInfo | null) {
+    this.router = new Router();
+    this.userInfo = userInfo;
+
     this.evtSource = new EventSource("/api/v1/events");
     this.evtSource.onmessage = (_e) => {
       // TODO(Vaiva): SSE handler
     };
-
-    this.userInfo = userInfo;
-
-    this.router = new Router();
 
     this.headerRoot = document.getElementsByTagName("header")[0] as HTMLElement;
     this.header = "fuck typescript" as any as PageHeader;

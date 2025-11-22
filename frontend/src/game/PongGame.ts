@@ -11,7 +11,6 @@ import {
   StandardMaterial,
   Color3,
   KeyboardEventTypes,
-  BloomEffect,
 } from "@babylonjs/core";
 
 const BALL_RADIUS = 0.3;
@@ -434,13 +433,13 @@ export class PongApp {
         mat.specularColor = new Color3(0.15, 0.15, 0.15);
         switch (i) {
           case 0:
-            paddle.scaling.z = this.params.paddleSize / DOWNSCALE;
+            paddle.scaling.z = (this.params.paddleSize / DOWNSCALE) * 0.89;
             paddle.scaling.y = 1.05;
             paddle.scaling.x = 1.05;
             paddle.position.x = FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS;
             break;
           case 1:
-            paddle.scaling.z = this.params.paddleSize / DOWNSCALE;
+            paddle.scaling.z = (this.params.paddleSize / DOWNSCALE) * 0.89;
             paddle.scaling.y = 1.05;
             paddle.scaling.x = 1.05;
             paddle.position.x = -(
@@ -450,13 +449,13 @@ export class PongApp {
             );
             break;
           case 2:
-            paddle.scaling.x = this.params.paddleSize / DOWNSCALE;
+            paddle.scaling.x = (this.params.paddleSize / DOWNSCALE) * 0.89;
             paddle.scaling.y = 1.05;
             paddle.scaling.z = 1.05;
             paddle.position.z = FIELD_HALFSIZE / DOWNSCALE + 0.5 + BALL_RADIUS;
             break;
           case 3:
-            paddle.scaling.x = this.params.paddleSize / DOWNSCALE;
+            paddle.scaling.x = (this.params.paddleSize / DOWNSCALE) * 0.89;
             paddle.scaling.y = 1.05;
             paddle.scaling.z = 1.05;
             paddle.position.z = -(
@@ -510,10 +509,10 @@ export class PongApp {
   // rotating camera so see themself on left from their perspective (for remote games)
   rotateCameraForPlayer(pid: number) {
     const rotations = {
-      0: 0, // No rotation needed
-      1: Math.PI, // 180
-      2: Math.PI / 2, // +90
-      3: (3 * Math.PI) / 2, // -90
+      3: 0, // No rotation needed
+      2: Math.PI, // 180
+      0: Math.PI / 2, // +90
+      1: (3 * Math.PI) / 2, // -90
     };
 
     const rotation = rotations[pid as keyof typeof rotations];

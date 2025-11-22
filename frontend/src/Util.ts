@@ -8,14 +8,14 @@ export const userFromMaybeId = async (
 ): Promise<UserInfo> => {
   if (typeof id === "string") {
     return {
-      id: -1,
+      id: 0,
       username: id,
     };
   }
-  const resp = await API.fetch(`/users/id/${id}`);
+  const resp = await API.fetch(`/users/${id}`);
   if (resp.ok || resp.status === 304) return await resp.json();
   return {
     id: id,
-    username: "unknown user",
+    username: "Unknown user",
   };
 };

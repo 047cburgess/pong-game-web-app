@@ -168,7 +168,7 @@ export class Textbox extends AElement {
   private onkeydown?: (this: GlobalEventHandlers, e: KeyboardEvent) => any;
   private postVal?: (e: Textbox) => any;
   validators: FieldValidator[] = [];
-  validationErrors: string[] | undefined;
+  validationErrors: string[] | null = null;
 
   constructor(id: string) {
     super();
@@ -204,7 +204,7 @@ export class Textbox extends AElement {
       self.classList.remove(...INPUT_BOX_RED_OUTLINE);
       self.classList.add(...INPUT_BOX_OUTLINE);
     }
-    this.validationErrors = errors;
+    this.validationErrors = errors ?? null;
     this.postVal?.call(null, this);
   }
 

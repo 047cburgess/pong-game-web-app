@@ -101,6 +101,7 @@ export default class Router {
     if (this.currentPath === cleanPath) {
       this.redraw();
       this.currentPage?.bindEvents();
+      this.currentPage?.loadData();
       return;
     }
     this.currentPath = cleanPath;

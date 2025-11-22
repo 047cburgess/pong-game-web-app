@@ -1,4 +1,6 @@
 import { GameResultExt } from "../../Api";
+import { APP } from "../../App";
+import Router from "../../Router";
 import { AElement, Div, Paragraph } from "./Elements";
 
 const CARD_STYLES: string =
@@ -45,7 +47,10 @@ export class GameCardBase extends Div {
 }
 
 export class GameCardLarge extends GameCardBase {
-  constructor(data: GameResultExt | undefined) {
+  constructor(
+    data: GameResultExt | undefined,
+    protected router: Router,
+  ) {
     super(data);
     this.class("divide-solid divide-x-2");
 
@@ -65,7 +70,7 @@ export class GameCardLarge extends GameCardBase {
         ),
         new Paragraph(cardTextFromResult(this.data)).class("font-bold text-xl"),
       ).class("m-2 ml-4 self-center w-40"),
-      this.scoreDiv().class("grow"),
+      this.scoreDiv(),
     ];
   }
 
@@ -74,19 +79,52 @@ export class GameCardLarge extends GameCardBase {
       throw new Error("unreachable");
     }
     const rows: AElement[] = [];
-    for (let i = 1; i < this.data.players.length; i++) {
-      rows.push(
-        new Div(
-          new Paragraph(`${this.data.players[i].score}`),
-          new Paragraph(`${this.data.players[i].id}`),
-        ).class("flex flex-row justify-between gap-2"),
-      );
+    let thisUserIndex =
+      (this.data.thisUser
+        && this.data.playerInfos
+          .map((x) => x.id)
+          .indexOf(this.data?.thisUser ?? 0))
+      || 0;
+    for (let i = 0; i < this.data.players.length; i++) {
+      if (i === thisUserIndex) continue;
+      const div = new Div(
+        new Paragraph(`${this.data.players[i].score}`),
+        new Paragraph(`${this.data.playerInfos[i].username}`),
+      ).class("flex flex-row justify-between gap-2") as Div;
+      if (this.data.playerInfos[i].id) {
+        div
+          .withOnclick(() => {
+            const username = this.data!.playerInfos[i].username as string;
+            let path = "/dashboard";
+            if (username !== APP.userInfo?.username) {
+              path += "?user=" + username;
+            }
+            this.router.navigate(path);
+          })
+          .withId(`game-${this.data!.id}-${i}`)
+          .class("hover:text-yellow-200");
+      }
+      rows.push(div);
     }
+    const ownDiv = new Div(
+      new Paragraph(this.data.playerInfos[thisUserIndex].username.toString()),
+      new Paragraph(`${this.data.players[thisUserIndex].score}`),
+    )
+      .class(
+        "flex flex-row self-center justify-between grow ml-4 gap-2 hover:text-yellow-200",
+      )
+      .withOnclick(() => {
+        const username = this.data!.playerInfos[thisUserIndex]
+          .username as string;
+        let path = "/dashboard";
+        if (username !== APP.userInfo?.username) {
+          path += "?user=" + username;
+        }
+        this.router.navigate(path);
+      })
+      .withId(`game-${this.data!.id}-${thisUserIndex}`);
     return new Div(
-      new Div(
-        new Paragraph(this.data.players[0].id.toString()),
-        new Paragraph(`${this.data.players[0].score}`),
-      ).class("flex flex-row self-center justify-between grow ml-4 gap-2"),
+      ownDiv,
       new Paragraph(" – ").class("self-center m-3"),
       new Div(...rows).class("self-center grow"),
     ).class("font-bold flex flex-row ml-2 mr-4 grow justify-between") as Div;

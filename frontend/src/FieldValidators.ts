@@ -9,7 +9,7 @@ export const usernameValidator: FieldValidator = (username) => {
   } else if (username.length < 3) {
     errors.push("Username too short");
   }
-  if (username.length > 32) {
+  if (username.length > 14) {
     errors.push("Username too long");
   }
 

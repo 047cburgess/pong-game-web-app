@@ -27,7 +27,18 @@ export default class MatchHistoryPage extends AListPage {
   async loadData(): Promise<void> {
     let path = "/user";
     if (this.username !== APP.userInfo?.username) {
-      path = `/users/${this.username}`;
+      try {
+        const resp = await API.fetch(`/users/${this.username}`);
+        if (!resp.ok) {
+          this.router.navigate(404, false);
+          return;
+        }
+        const userId = (await resp.json()).id;
+        path = `/users/${userId}`;
+      } catch (e: any) {
+        console.log(e);
+        return;
+      }
     }
 
     const resp = await API.fetch(`${path}/games`);
@@ -90,7 +101,11 @@ export default class MatchHistoryPage extends AListPage {
           .class(MUTED_TEXT),
       ]);
     } else {
-      this.setContents(this.games.map((g) => new GameCardLarge(g)));
+      this.setContents(
+        this.games.map((g) =>
+          new GameCardLarge(g, this.router).class("w-160 mb-6"),
+        ),
+      );
     }
 
     if (this.router.currentPage !== this) {

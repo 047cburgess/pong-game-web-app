@@ -228,11 +228,7 @@ export default class DashboardPage extends Page {
     } else {
       for (let i = 0; i < Math.min(5, this.recentGames.length); i++) {
         const gg = this.recentGames[i];
-        cards.push(
-          new GameCardLarge(gg)
-            .withOnclick(() => this.router.navigate(`/games?id=${gg.id}`))
-            .withId(`game-card-${i}`),
-        );
+        cards.push(new GameCardLarge(gg, this.router).withId(`game-card-${i}`));
       }
     }
     for (const c of cards) {
@@ -525,6 +521,8 @@ export default class DashboardPage extends Page {
       proms.push(userFromMaybeId(id).then((info) => userInfos.set(id, info)));
     }
     await Promise.all(proms);
+
+    console.log(userInfos);
 
     this.recentGames = this.stats.recentMatches.map((g) => {
       (g as GameResultExt).playerInfos = g.players.map((p) =>
