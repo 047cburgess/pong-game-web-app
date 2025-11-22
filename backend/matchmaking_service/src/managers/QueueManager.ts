@@ -42,15 +42,15 @@ export class QueueManager {
 	 * @throws ConflictError if player is already in queue or in an active queue game
 	 */
 	async joinQueue(userId: UserId): Promise<GameKey> {
+		// Check if player is already waiting
 		if (this.waitingGame && this.waitingGame.firstPlayerId === userId) {
 			throw new ConflictError('You are already in the queue');
 		}
 
-		for (const game of this.games.values()) {
-			if (game.players.includes(userId)) {
-				throw new ConflictError('You are already in an active game');
-			}
-		}
+		// Note: We don't check if player is in an active game to allow:
+		// 1. Players to join new games after disconnecting/abandoning
+		// 2. Players to reconnect to games they left
+		// The periodic cleanup will handle truly abandoned games
 
 		if (!this.waitingGame) {
 			this.log.info({ userId }, 'Creating new game for first player');
@@ -168,6 +168,11 @@ export class QueueManager {
 		const now = Date.now();
 		let cleaned = { waiting: 0, active: 0 };
 
+		this.log.info(
+			{ totalGames: this.games.size, waitingGame: !!this.waitingGame },
+			'Queue cleanup check - current state'
+		);
+
 		// Clean up waiting game if too old
 		if (this.waitingGame) {
 			const age = now - this.waitingGame.createdAt.getTime();
@@ -186,6 +191,10 @@ export class QueueManager {
 		const staleGames: GameId[] = [];
 		for (const [gameId, game] of this.games.entries()) {
 			const age = now - game.createdAt.getTime();
+			this.log.debug(
+				{ gameId, ageMs: age, maxAgeMs: activeMaxAgeMs, isStale: age > activeMaxAgeMs },
+				'Checking queue game age'
+			);
 			if (age > activeMaxAgeMs) {
 				staleGames.push(gameId);
 			}

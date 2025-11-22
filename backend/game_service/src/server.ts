@@ -392,7 +392,30 @@ fastify.register(async function(fastify) {
 });
 
 fastify.listen({ host: "0.0.0.0", port: config.PORT })
-  .then(() => fastify.log.info(`Listening on 0.0.0.0:${config.PORT}`));
+  .then(() => {
+    fastify.log.info(`Listening on 0.0.0.0:${config.PORT}`);
+
+    // Periodic game state logging
+    setInterval(() => {
+      const gameStates = Array.from(games.values()).map(game => ({
+        gameId: game.id,
+        started: !!game.loop,
+        ended: game.gameEnded,
+        connectedPlayers: game.players.size,
+        readyPlayers: game.readyPlayers.size,
+        expectedPlayers: game.params.nPlayers,
+        isTournament: game.params.isTournament,
+        playerUserIds: Array.from(game.players.values())
+          .filter(p => !p.isViewer)
+          .map(p => p.userId ?? null),
+      }));
+
+      fastify.log.info(
+        { totalGames: games.size, games: gameStates },
+        'Game service state'
+      );
+    }, 60 * 1000); // Every minute
+  });
 
 const shutdown = async () => {
   fastify.log.info('Shutting down game service');
