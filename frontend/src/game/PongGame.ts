@@ -138,6 +138,11 @@ export class PongApp {
     this.engine = new Engine(canvas, true);
     this.scene = new Scene(this.engine);
 
+    // Handle window resize to prevent distortion
+    window.addEventListener("resize", () => {
+      this.engine.resize();
+    });
+
     this.player1 = {
       upKey: "s",
       downKey: "w",
