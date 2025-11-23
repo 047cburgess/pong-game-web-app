@@ -29,8 +29,6 @@ npm-install:
 	cd backend/game_service && npm install
 	@echo "$(BLUE)Installing matchmaking service dependencies...$(NC)"
 	cd backend/matchmaking_service && npm install
-	@echo "$(BLUE)Installing babylon webserver dependencies...$(NC)"
-	cd game-front-babylon && npm install
 	@echo "$(GREEN)All npm dependencies installed$(NC)"
 
 npm-build:

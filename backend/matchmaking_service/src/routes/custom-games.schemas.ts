@@ -188,9 +188,10 @@ export const inviteGameSchema = {
   response: {
     200: {
       type: 'object',
-      required: ['invitedPlayerIds'],
+      required: ['gameId', 'invitedPlayers'],
       properties: {
-        invitedPlayerIds: {
+        gameId: { type: 'string' },
+        invitedPlayers: {
           type: 'array',
           items: { type: 'number' }
         }
