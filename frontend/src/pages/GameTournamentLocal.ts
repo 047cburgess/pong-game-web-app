@@ -269,7 +269,7 @@ export default class GameTournamentLocalPage extends Page {
         this.newTournamentBtn,
       ).class("flex justify-center gap-4 mb-6"),
       new Div(inputColumn, semifinalsColumn, finalColumn).class(
-        "grid grid-cols-3 gap-16 max-w-6xl mx-auto",
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-16 max-w-6xl mx-auto",
       ),
     ).class(
       "flex flex-col justify-center items-center min-h-screen p-8",
@@ -380,6 +380,14 @@ export default class GameTournamentLocalPage extends Page {
       }
     }
 
+    // Add placeholder text for guest inputs
+    for (let i = 1; i < PLAYER_COUNT; i++) {
+      (this.playerInputs[i].byId() as HTMLInputElement).placeholder = "Enter guest alias";
+    }
+
+    // Focus on first guest input Player 2
+    (this.playerInputs[1].byId() as HTMLInputElement).focus();
+
     // Initialise bracket display with placeholder text
     this.updateBracketCards();
   }
@@ -391,7 +399,7 @@ export default class GameTournamentLocalPage extends Page {
 
   private async startTournament(): Promise<void> {
     // Read player names from inputs
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < PLAYER_COUNT; i++) {
       const input = this.playerInputs[i].byId() as HTMLInputElement;
       if (input) {
         this.playerNames[i] = input.value;
@@ -399,9 +407,16 @@ export default class GameTournamentLocalPage extends Page {
     }
 
     // Validate all names entered
-    // TODO: block duplicate names
     if (this.playerNames.some((name) => !name.trim())) {
       alert("Please enter names for all 4 players");
+      return;
+    }
+
+    // Check for duplicate names
+    const trimmedNames = this.playerNames.map((name) => name.trim().toLowerCase());
+    const uniqueNames = new Set(trimmedNames);
+    if (uniqueNames.size !== this.playerNames.length) {
+      alert("Player names must be unique");
       return;
     }
 
@@ -924,8 +939,10 @@ export default class GameTournamentLocalPage extends Page {
             new Div()
               .class("w-10 h-10 rounded-full outline outline-2")
               .withStyle(`background: ${p1Color}; outline-color: ${p1Color}`),
-            new Paragraph(p1Name).class("text-xl font-bold text-white"),
-          ).class("flex items-center gap-4"),
+            new Paragraph(p1Name).class(
+              "text-xl font-bold text-white truncate max-w-[300px]",
+            ),
+          ).class("flex items-center gap-4 min-w-0 flex-1"),
           new Paragraph("-").class("text-3xl font-bold text-neutral-700"),
         ).class("flex items-center justify-between py-2");
 
@@ -938,8 +955,10 @@ export default class GameTournamentLocalPage extends Page {
             new Div()
               .class("w-10 h-10 rounded-full outline outline-2")
               .withStyle(`background: ${p2Color}; outline-color: ${p2Color}`),
-            new Paragraph(p2Name).class("text-xl font-bold text-white"),
-          ).class("flex items-center gap-4"),
+            new Paragraph(p2Name).class(
+              "text-xl font-bold text-white truncate max-w-[300px]",
+            ),
+          ).class("flex items-center gap-4 min-w-0 flex-1"),
           new Paragraph("-").class("text-3xl font-bold text-neutral-700"),
         ).class("flex items-center justify-between py-2");
 
@@ -959,8 +978,10 @@ export default class GameTournamentLocalPage extends Page {
               new Div()
                 .class("w-10 h-10 rounded-full outline outline-2")
                 .withStyle(`background: ${p1Color}; outline-color: ${p1Color}`),
-              new Paragraph(p1Name).class("text-xl font-bold text-white"),
-            ).class("flex items-center gap-4"),
+              new Paragraph(p1Name).class(
+                "text-xl font-bold text-white truncate max-w-[300px]",
+              ),
+            ).class("flex items-center gap-4 min-w-0 flex-1"),
             new Paragraph(String(p1Score))
               .class("text-3xl font-bold")
               .withStyle(`color: ${p1Color}`),
@@ -973,8 +994,10 @@ export default class GameTournamentLocalPage extends Page {
               new Div()
                 .class("w-10 h-10 rounded-full outline outline-2")
                 .withStyle(`background: ${p2Color}; outline-color: ${p2Color}`),
-              new Paragraph(p2Name).class("text-xl font-bold text-white"),
-            ).class("flex items-center gap-4"),
+              new Paragraph(p2Name).class(
+                "text-xl font-bold text-white truncate max-w-[300px]",
+              ),
+            ).class("flex items-center gap-4 min-w-0 flex-1"),
             new Paragraph(String(p2Score))
               .class("text-3xl font-bold")
               .withStyle(`color: ${p2Color}`),
