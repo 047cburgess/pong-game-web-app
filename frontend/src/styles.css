@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+.sse-pushups-zone-style {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999999;
+  pointer-events: none;
+  width: 40vw;
+  /* largeur = 40% de la fenêtre */
+  height: 25vh;
+  /*test
+
+  background: red;
+  */
+}

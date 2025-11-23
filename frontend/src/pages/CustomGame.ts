@@ -574,7 +574,7 @@ export class PlayerCard extends Div {
 	on join after invite then not host
 	on create then host
 
-
+	need to manage dynamic update for  client since he does not know how many players there is 
 */
 export class CustomGamePage extends Page {
   private playerSlots: PlayerSlot[] = Array(4).fill({}); // 4 places
