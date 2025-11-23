@@ -18,7 +18,7 @@ import SettingsPage from "./pages/Settings";
 import PlayPage from "./pages/Play";
 import GameLocalPage from "./pages/GameLocal";
 import GameTournamentLocalPage from "./pages/GameTournamentLocal";
-import { CustomGamePage, WaitingMenu } from "./pages/CustomGame";
+import { CustomGamePage } from "./pages/CustomGame";
 import QueuePage from "./pages/Queue";
 
 export const getUsername = (): string | null => {

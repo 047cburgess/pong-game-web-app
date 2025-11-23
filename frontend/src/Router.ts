@@ -5,11 +5,7 @@ import { AElement } from "./pages/elements/Elements";
 export abstract class Page {
   readonly router: Router;
 
-  constructor(
-    router: Router,
-    needsAuth: boolean = true,
-    protected Options?: any,
-  ) {
+  constructor(router: Router, needsAuth: boolean = true, Options?: any) {
     if (needsAuth && !APP.userInfo) {
       throw new NavError(401);
     }

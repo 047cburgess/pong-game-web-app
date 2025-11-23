@@ -81,3 +81,7 @@ export const PLAYER_COLOUR_CLASSES = [
   "blue-300",
   "yellow-300",
 ];
+
+export const DRAW_COLOR = "rgb(109, 109, 109)";
+export const VICTORY_COLOR = "rgb(8, 216, 216)";
+export const DEFEAT_COLOR = "rgb(187, 19, 19)";

@@ -312,10 +312,12 @@ export abstract class AContainer extends AElement {
 
   addContentWithAppend(contents: AElement | Iterable<AElement>): AContainer {
     if (!(Symbol.iterator in Object(contents))) {
+      if (this.contents.findIndex((c) => c === contents) !== -1) return this;
       this._addOrUpdate(contents as AElement);
       this.AppendContent(contents as AElement);
     } else {
       for (const x of contents as Iterable<AElement>) {
+        if (this.contents.findIndex((c) => c === contents) !== -1) continue;
         this._addOrUpdate(x);
         this.AppendContent(x);
       }

@@ -8,6 +8,9 @@ import {
   AContainer,
 } from "./elements/Elements";
 import { DEFAULT_BUTTON } from "./elements/CssUtils";
+import { stringify } from "querystring";
+import { APP } from "../App";
+import { gameKeys } from "./CustomGame";
 
 type MenuState = "main" | "local" | "online";
 
@@ -252,9 +255,24 @@ export class Online_Menu extends Div {
     this.customGameDiv.bindEvents();
   }
 
-  navigator(i: number) {
+  async navigator(i: number) {
     console.log("onclick");
+    const resp = await fetch("/api/v1/games/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ numberOfPlayers: i, invitedPlayerIds: [] }),
+    });
     this.resetCustom();
-    this.router.navigate("/games/create", true, { nb_player: i });
+    if (!resp.ok) {
+      console.log("game creation failed");
+      return;
+    }
+    const hostKey = (await resp.json()) as gameKeys;
+    this.router.navigate("/games/create", true, {
+      ...hostKey,
+      nb_players: i,
+    });
   }
 }
