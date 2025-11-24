@@ -84,8 +84,8 @@ export class TwoFAManager {
 
 	public testCodeValidity(token: number, userCode: string): number {
 		const entry = this.activeCodes.get(token);
-		if (!entry) { throw new Error("INVALID2FA_TOKEN"); }
-		if (entry.code !== userCode) { throw new Error("INVALID2FA_CODE"); }
+		if (!entry) { throw ApiError.Unauthorized("INVALID2FA_TOKEN", "invalid token"); }
+		if (entry.code !== userCode) { throw ApiError.Unauthorized("INVALID2FA_CODE", "Invalid code try again"); }
 		const user_id = entry.id;
 
 		clearTimeout(entry.timeoutId);
@@ -142,7 +142,7 @@ export class TwoFAManager {
 		const mailData = this.prepareMailData(token, recipientEmail);
 
 		if (!mailData) {
-			throw  ApiError.Unauthorized("INVALID_2FA_TOKEN", "Cannot send mail: Invalid token of code expired."); // TODO: the integrated error handler
+			throw ApiError.Unauthorized("INVALID_2FA_TOKEN", "Cannot send mail: Invalid token of code expired."); // TODO: the integrated error handler
 		}
 
 		try {
