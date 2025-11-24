@@ -2,7 +2,6 @@
 node_modules/
 .swp
 cookies.txt
-frontend/
 frontend/node_modules/
 frontend/dist/
 backend/auth_service/node_modules/
