@@ -40,7 +40,7 @@ export class FriendManager extends ManagerBase {
 	// ----------------- Loading -----------------
 
 	loadUser(user_id: user_id) {
-		if (this.graph.has(user_id)) return; //already loaded
+		this.graph.delete(user_id);
 
 		const node: UserNode = { friends: new Set(), incomingRequests: new Set(), outgoingRequests: new Set() };
 
