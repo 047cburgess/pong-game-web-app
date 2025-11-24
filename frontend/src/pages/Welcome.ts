@@ -14,7 +14,7 @@ export default class WelcomePage extends Page {
 
   titleCard: Div;
 
-  nextPage: string = "/login";
+  nextPage: string = "/register";
 
   constructor(router: Router) {
     super(router, false);
