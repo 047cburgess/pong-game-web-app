@@ -37,7 +37,6 @@ async function getSomeonesUsername(id: number): Promise<string | undefined> {
 }
 
 export async function createCustomGame(i: number, toInvite: number[] = []) {
-  console.log("onclick");
   const resp = await fetch("/api/v1/games/create", {
     method: "POST",
     headers: {

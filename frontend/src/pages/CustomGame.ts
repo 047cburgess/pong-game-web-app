@@ -833,7 +833,6 @@ export class CustomGamePage extends Page {
         //this.mainContents.removeContent();
         break;
       case "finished":
-        console.log("game ended");
         this.mainContents.addContent(this.EndGame_menu);
         break;
     }
@@ -875,6 +874,7 @@ export class CustomGamePage extends Page {
             this.createGameHUD();
             this.startUIUpdates();
             this.stopForceExitWatcher();
+			break;
           }
           case "game_end":
             this.onGameEnd(msg);
@@ -926,8 +926,6 @@ export class CustomGamePage extends Page {
   }
 
   private onGameEnd(msg: any): void {
-    if (!this.finalScores || this.finalScores.length < 2 || !this.gameInstance)
-      return;
     if ((this as any).updateIntervalId) {
       clearInterval((this as any).updateIntervalId);
       delete (this as any).updateIntervalId;
@@ -943,11 +941,12 @@ export class CustomGamePage extends Page {
       }));
     }
     this.EndGame_menu.displayFinalScores(
-      this.gameInstance.myPid,
+      this.gameInstance!.myPid,
       this.IngamePlayers.map((e) => e.User),
       this.finalScores,
     );
     this.queueState = "finished";
+
   }
 
   //during game i guess
