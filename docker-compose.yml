@@ -17,6 +17,7 @@ services:
     container_name: auth-service
     networks:
       - transcendence
+      - proxy
     volumes:
       - auth-service-data:/app/data
     restart: unless-stopped
