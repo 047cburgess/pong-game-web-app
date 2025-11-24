@@ -17,3 +17,5 @@ TSP/
 old/
 TODO.txt
 default.webp
+devcont.*
+.nvim.lua
