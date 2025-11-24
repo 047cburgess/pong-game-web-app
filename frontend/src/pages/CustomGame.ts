@@ -625,7 +625,7 @@ export class CustomGamePage extends Page {
   ) {
     super(router, false);
     if (!Options) {
-      alert("nop, this custom room does not exist, bye.");
+      alert("Kind soul... There is no coming back.");
       this.OnExitClick();
     }
     //alert(`Option = ${Options?.gameId}, ${Options?.nb_players}, ${Options?.key},${Options?.expires}`);
@@ -831,9 +831,9 @@ export class CustomGamePage extends Page {
         break;
       case "playing":
         //this.mainContents.removeContent();
-        this.createGameHUD();
         break;
       case "finished":
+		console.log("game ended");
         this.mainContents.addContent(this.EndGame_menu);
         break;
     }

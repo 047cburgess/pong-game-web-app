@@ -9,7 +9,7 @@ import {
 } from "./elements/Elements";
 import { DEFAULT_BUTTON } from "./elements/CssUtils";
 import { stringify } from "querystring";
-import { APP } from "../App";
+import { APP, createCustomGame } from "../App";
 import { gameKeys } from "./CustomGame";
 
 type MenuState = "main" | "local" | "online";
@@ -257,5 +257,6 @@ export class Online_Menu extends Div {
 
   createCustom(i: number) {
     this.resetCustom();
+	createCustomGame(i);
   }
 }
