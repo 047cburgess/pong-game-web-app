@@ -35,6 +35,26 @@ async function getSomeonesUsername(id: number): Promise<string | undefined> {
   return ((await resp.json()) as UserInfo).username;
 }
 
+export async function createCustomGame(i: number, toInvite: number[] = []) {
+  console.log("onclick");
+  const resp = await fetch("/api/v1/games/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ numberOfPlayers: i, invitedPlayerIds: toInvite }),
+  });
+  if (!resp.ok) {
+    console.log("game creation failed");
+    return;
+  }
+  const hostKey = (await resp.json()) as gameKeys;
+  APP.router.navigate("/games/create", true, {
+    ...hostKey,
+    nb_players: i,
+  });
+}
+
 class RedirToLogin extends Page {
   constructor(router: Router) {
     super(router, false);
@@ -78,6 +98,7 @@ export class GameInvitePopup extends Div {
   ) as Div;
 
   private sendernamePromised: Promise<string | undefined>;
+
   constructor(
     private router: Router,
     private gameId: string,
@@ -86,7 +107,7 @@ export class GameInvitePopup extends Div {
     super();
     this.sendernamePromised = getSomeonesUsername(this.from);
     this.acceptBtn.withOnclick(this.onAccept.bind(this));
-    this.refuseBtn.withOnclick(this.onRefuse);
+    this.refuseBtn.withOnclick(this.onRefuse.bind(this));
     this.senderText.text = `Sender: Unknown`;
     this.class("absolute inset-0 flex items-center justify-center");
     this.mainContent
@@ -104,7 +125,7 @@ export class GameInvitePopup extends Div {
     this.acceptBtn.addContent(new Paragraph("Accept"));
     this.refuseBtn
       .class("px-6 py-3 rounded-md border border-zinc-600 min-w-[120px]")
-      .class("hover:border-red-500 hover:ring-2 hover:ring-blue-400")
+      .class("hover:border-red-500 hover:ring-2 hover:ring-red-400")
       .class("transition-all duration-150");
     this.refuseBtn.addContent(new Paragraph("Refuse"));
 
@@ -127,13 +148,31 @@ export class GameInvitePopup extends Div {
     });
     if (resp.ok) {
       const gamekey = (await resp.json()) as gameKeys;
-      this.router.navigate(`games/create`, true, { ...gamekey, nb_players: 2 });
+      this.router.navigate(`games/create`, true, {
+        ...gamekey,
+        nb_players: -1,
+      });
     } else alert("failed in joining the GAME");
+    APP.popupDiv.innerHTML = "";
   }
 
-  onRefuse() {
+  async onRefuse() {
     console.log("onRefuse");
+    const resp = await fetch(`/api/v1/games/${this.gameId}/decline`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        gameId: this.gameId,
+      }),
+    });
     APP.popupDiv.innerHTML = "";
+  }
+
+  async updateSender() {
+    const str = await this.sendernamePromised;
+    if (str) this.senderText.text = `Sender: ${str}`;
   }
 }
 
@@ -201,32 +240,38 @@ class App {
     this.reloadHeader();
   }
 
-  onMsg(e: MessageEvent<any>) {
+  async onMsg(e: MessageEvent<any>) {
     try {
       const event = JSON.parse(e.data);
       console.log("SSE event reçu :", event);
       switch (event.event) {
         case "GameInvite":
-          this.onGameInvite(event as GameInvite);
+          await this.onGameInvite(event as GameInvite);
           break;
-        case "InviteAccepted":
+        case "InviteDeclined":
+          if (CustomGamePage.isInDuel) {
+            alert("Invitation Declined... I guess they were scared");
+            CustomGamePage.forceExit = true;
+          }
           break;
       }
-      /*
-			setTimeout(() => {
-			  this.popupDiv.innerHTML = "";
-			}, 10000);*/
+
+      setTimeout(() => {
+        this.popupDiv.innerHTML = "";
+      }, 10000);
     } catch (err) {
       console.error("Erreur parsing SSE :", err);
     }
   }
 
-  onGameInvite(invite: GameInvite) {
+  async onGameInvite(invite: GameInvite) {
+    alert(JSON.stringify(invite));
     const popup: GameInvitePopup = new GameInvitePopup(
       this.router,
       invite.gameId,
       invite.from,
     );
+    await popup.updateSender();
     this.popupDiv.innerHTML = popup.render();
     popup.bindEvents();
   }

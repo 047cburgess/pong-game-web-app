@@ -222,7 +222,7 @@ export class Online_Menu extends Div {
     this.custom_selection_buttons = [2, 3, 4].map((i) =>
       new Button(new Paragraph(`${i}j`).class("w-full text-center"))
         .class(DEFAULT_BUTTON)
-        .withOnclick(() => this.navigator(i))
+        .withOnclick(() => this.createCustom(i))
         .class("w-full py-4"),
     );
 
@@ -255,24 +255,7 @@ export class Online_Menu extends Div {
     this.customGameDiv.bindEvents();
   }
 
-  async navigator(i: number) {
-    console.log("onclick");
-    const resp = await fetch("/api/v1/games/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ numberOfPlayers: i, invitedPlayerIds: [] }),
-    });
+  createCustom(i: number) {
     this.resetCustom();
-    if (!resp.ok) {
-      console.log("game creation failed");
-      return;
-    }
-    const hostKey = (await resp.json()) as gameKeys;
-    this.router.navigate("/games/create", true, {
-      ...hostKey,
-      nb_players: i,
-    });
   }
 }

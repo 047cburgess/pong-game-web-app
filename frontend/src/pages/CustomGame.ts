@@ -168,7 +168,7 @@ export class InviteMenu extends GameOverlay {
     "text-3xl font-bold m-0 mb-4 text-center text-white drop-shadow-md",
   ) as Header;
 
-  private textbar: Textbox = new Textbox("friend-search")
+  private textbar: Textbox = new Textbox("friend-searchbar")
     .class(
       "w-full p-3 rounded-lg text-white bg-zinc-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all",
     )
@@ -232,15 +232,16 @@ export class InviteMenu extends GameOverlay {
       if (resp.ok) {
         const id = ((await resp.json()) as UserInfo).id;
         await this.invite(id);
+        this.textbar.removeClass(`focus:ring-pink-500`);
+        this.textbar.class(`focus:ring-blue-500`);
+        this.textbar.update_classes();
+      } else if (!resp.ok) {
+        this.textbar.removeClass(`focus:ring-pink-500`);
+        this.textbar.class(`focus:ring-red-500`);
+        this.textbar.update_classes();
       }
-      this.textbar.removeClass(`focus:ring-pink-500`);
-      this.textbar.class(`focus:ring-blue-500`);
-      this.textbar.update_classes();
     } catch {
       console.log("error on search");
-      this.textbar.removeClass(`focus:ring-pink-500`);
-      this.textbar.class(`focus:ring-red-500`);
-      this.textbar.update_classes();
     }
     setTimeout(() => {
       this.textbar.removeClass(`focus:ring-blue-500`);
@@ -250,9 +251,9 @@ export class InviteMenu extends GameOverlay {
     }, 1000);
   }
 
-  async invite(id: number) {
+  async invite(id: number): Promise<Response> {
     console.log(id);
-    await fetch(`/api/v1/games/${InviteMenu.gameId}/invite`, {
+    const resp = await fetch(`/api/v1/games/${InviteMenu.gameId}/invite`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -262,13 +263,9 @@ export class InviteMenu extends GameOverlay {
         invitedPlayerIds: [id],
       }),
     });
+    return resp;
   }
-  /*
-	export type InviteToGameRequest = {
-	gameId: string;
-	invitedPlayerIds: UserId[];
-};
-	*/
+
   private async selectFriend(id: number) {
     const state = InviteMenu.friendState.get(id);
     if (state && state.border === "green") return;
@@ -291,15 +288,15 @@ export class InviteMenu extends GameOverlay {
         border =
           st.border === "blue" ? "border border-blue-500"
           : st.border === "red" ? "border border-red-700"
-          : st.border === "green" ? "border border-emerald-700"
+          : st.border === "green" ?
+            "border border-emerald-700 border-emerald-700"
           : "border border-transparent";
       }
-      el.class(`
-            flex items-center w-full p-2 rounded-lg cursor-pointer transition-colors
-            shrink-0 h-16 ${bg} ${border} hover:bg-zinc-600
-        `);
+      el.removeClass("border-blue-500 border-red-700 border-transparent");
+      el.class(`${border}`);
       el.update_classes();
     });
+    //"flex items-center w-full p-2 rounded-lg cursor-pointer transition-colors shrink-0 h-16 bg-zinc-700/50 hover:bg-zinc-600",
     //could need to redraw
   }
 
@@ -311,9 +308,13 @@ export class InviteMenu extends GameOverlay {
     InviteMenu.friendState.set(id, { border: state });
   }
 
-  updatefriendlist() {
-    const friends = this.mockFriends;
-
+  async updatefriendlist() {
+    let friends: UserInfo[] | undefined;
+    const resp = await fetch(`/api/v1/user/friends`, {
+      method: "GET",
+    });
+    if (resp.ok) friends = (await resp.json()) as UserInfo[];
+    if (!friends) friends = [];
     const onlineFriends = friends.filter(
       (friend) =>
         !friend.lastSeen
@@ -339,9 +340,7 @@ export class InviteMenu extends GameOverlay {
     this.friendContainer.removeContent(...this.friendElements);
     this.friendContainer.addContent(newfriendElements);
     this.friendElements = newfriendElements;
-
     this.applyFriendStyles(); // ← réapplique les couleurs persistantes
-
     this.redrawInner();
   }
 }
@@ -577,6 +576,9 @@ export class PlayerCard extends Div {
 	need to manage dynamic update for  client since he does not know how many players there is 
 */
 export class CustomGamePage extends Page {
+  static isInDuel = false;
+  static forceExit = false;
+
   private playerSlots: PlayerSlot[] = Array(4).fill({}); // 4 places
   private finalScores: { pid: number; score: number }[] = [];
   private currentUserId = APP.userInfo?.id;
@@ -624,11 +626,17 @@ export class CustomGamePage extends Page {
     super(router, false);
     if (!Options) {
       alert("nop, this custom room does not exist, bye.");
-      router.navigate("/play");
+      this.OnExitClick();
     }
     //alert(`Option = ${Options?.gameId}, ${Options?.nb_players}, ${Options?.key},${Options?.expires}`);
     this.nb_p = Options?.nb_players as number;
+    if (this.nb_p === -1) {
+      this.isHost = false;
+      Options!.nb_players = 2;
+      this.nb_p = 2;
+    }
 
+    if (CustomGamePage.isInDuel) this.startForceExitWatcher();
     this.EndGame_menu = new GameEndMenu(this.OnExitClick.bind(this));
     this.mainContents.addContent(this.Waiting_menu);
     this.mainContents.redrawInner();
@@ -678,6 +686,10 @@ export class CustomGamePage extends Page {
         this.createGameHUD();
       }
     }, 50);
+    if (!this.isHost) {
+      this.nb_p = this.gameInstance.params.nPlayers;
+      this.Options!.nb_players = this.gameInstance.params.nPlayers;
+    }
   }
 
   private restoreHeader(): void {
@@ -692,19 +704,27 @@ export class CustomGamePage extends Page {
     }
   }
 
+  private clearstate() {
+    this.resetGame();
+    this.stopForceExitWatcher();
+    this.Waiting_menu.clear_ready();
+    this.Invite_menu.clear_friendState();
+    this.restoreHeader();
+    CustomGamePage.forceExit = false;
+    CustomGamePage.isInDuel = false;
+  }
+
   transitionAway(): void {
     if (this.queueState !== "finished" && this.gameKey) {
     }
-    this.Waiting_menu.clear_ready();
-    this.resetGame();
-    this.restoreHeader();
+    this.clearstate();
   }
 
   content(): AElement[] {
     return [this.gameScreen, this.mainContents];
   }
 
-  private async createGameHUD(): Promise<void> {
+  private createGameHUD(): void {
     const hudContainer = document.getElementById("game-hud");
     const nbPlayers = this.Options?.nb_players || 2;
 
@@ -713,18 +733,17 @@ export class CustomGamePage extends Page {
     const myPid = this.gameInstance.myPid;
     if (myPid === undefined || myPid === -1) return;
 
-    const playerPromises = Array.from({ length: nbPlayers }, async (_, pid) => {
+    const players = Array.from({ length: nbPlayers }, (_, pid) => {
       const isMe = pid === myPid;
       const scoreId = `score-${pid}`;
       const color = PLAYER_COLOURS[pid % PLAYER_COLOURS.length];
 
-      let position: "left" | "right";
-
-      if (nbPlayers === 2) {
-        position = isMe ? "left" : "right";
-      } else {
-        position = pid % 2 === 0 ? "left" : "right";
-      }
+      const position: "left" | "right" =
+        nbPlayers === 2 ?
+          isMe ? "left"
+          : "right"
+        : pid % 2 === 0 ? "left"
+        : "right";
 
       if (isMe) {
         const myAvatar =
@@ -732,25 +751,16 @@ export class CustomGamePage extends Page {
             `/api/v1/user/avatars/${APP.userInfo.username}.webp`
           : undefined;
         this.myAvatarUrl = myAvatar;
-
         return new PlayerAvatar("You", scoreId, color, position, myAvatar);
       }
 
-      let playerName = "Waiting...";
-      let playerAvatar: string | undefined =
-        `/api/v1/user/avatars/default.webp`;
+      const ingamePlayer = this.IngamePlayers.find((p) => p.pid === pid);
+      const playerName = ingamePlayer?.User.username || `Player ${pid + 1}`;
+      const playerAvatar =
+        ingamePlayer?.User.username ?
+          `/api/v1/user/avatars/${ingamePlayer.User.username}.webp`
+        : `/api/v1/user/avatars/default.webp`;
 
-      const targetUserId = this.gameInstance?.playerUserIds.get(pid);
-
-      if (targetUserId) {
-        const userInfo = await this.getUserInfo(targetUserId);
-        if (userInfo) {
-          playerName = userInfo.username;
-          playerAvatar = `/api/v1/user/avatars/${userInfo.username}.webp`;
-        }
-      } else {
-        playerName = `Player ${pid + 1}`;
-      }
       return new PlayerAvatar(
         playerName,
         scoreId,
@@ -759,8 +769,6 @@ export class CustomGamePage extends Page {
         playerAvatar,
       );
     });
-
-    const players = await Promise.all(playerPromises);
 
     hudContainer.innerHTML = new GameHUD(players)
       .withId("game-hud-content")
@@ -847,37 +855,36 @@ export class CustomGamePage extends Page {
             this.Waiting_menu.add_ready(msg.pid);
             break;
           case "game_join":
+            if (!this.isHost) {
+              this.nb_p = this.gameInstance!.params.nPlayers;
+              this.Options!.nb_players = this.gameInstance!.params.nPlayers;
+            }
             break;
           case "player_list": {
-            if (this.queueState != "waiting") break;
-            const connectedPlayers = msg.players?.filter(
-              (p: any) => p.userId !== null,
-            );
-            this.renderQueueState();
-            if (connectedPlayers?.length === this.Options?.nb_players) {
-              this.queueState = "ready";
-            }
+            if (this.queueState !== "waiting") break;
+
+            msg.players
+              ?.filter((p: any) => p.userId != null)
+              .forEach((p: any) =>
+                this.Invite_menu.set_friendstate(p.userId, "green"),
+              );
             break;
           }
           case "game_start": {
             this.queueState = "playing";
             this.createGameHUD();
             this.startUIUpdates();
+            this.stopForceExitWatcher();
           }
           case "game_end":
             this.onGameEnd(msg);
             break;
           case "game_abandoned":
             alert("Game was abandoned: " + msg.reason);
-            this.resetGame();
             this.OnExitClick();
             break;
         }
         this.renderQueueState();
-        if (msg.type === "player_list" && this.queueState === "waiting") {
-        }
-        if (msg.type === "game_start") {
-        }
       } catch (e) {
         // Ignore parse errors
       }
@@ -976,11 +983,15 @@ export class CustomGamePage extends Page {
     (this as any).updateIntervalId = intervalId;
   }
 
+  static force_exit() {
+    this.forceExit = true;
+  }
+
   /*=================================================================
-		    
-							  Buttons Actions
-		    
-	  ===================================================================*/
+			  
+								Buttons Actions
+			  
+		===================================================================*/
   openInvitePanel() {
     console.log("");
     this.queueState = "inviting";
@@ -1015,7 +1026,27 @@ export class CustomGamePage extends Page {
   }
 
   OnExitClick() {
+    this.clearstate();
     this.router.navigate("play");
+  }
+
+  private forceExitCheckInterval?: number;
+
+  private startForceExitWatcher() {
+    this.forceExitCheckInterval = window.setInterval(() => {
+      if (CustomGamePage.forceExit) {
+        console.log("Force exit triggered!");
+        this.OnExitClick();
+      }
+    }, 1000);
+  }
+
+  private stopForceExitWatcher() {
+    if (this.forceExitCheckInterval !== undefined) {
+      clearInterval(this.forceExitCheckInterval);
+      delete this.forceExitCheckInterval;
+    }
+    this.forceExitCheckInterval = undefined;
   }
 }
 

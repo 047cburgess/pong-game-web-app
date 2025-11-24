@@ -1,5 +1,5 @@
 import { API, UserInfo } from "../Api";
-import { APP, getUsername } from "../App";
+import { APP, createCustomGame, getUsername } from "../App";
 import {
   AElement,
   Div,
@@ -22,6 +22,7 @@ import {
 } from "./elements/CssUtils";
 import { paths as ApiPaths } from "../PublicAPI";
 import AListPage, { titleForUser } from "./AListPage";
+import { CustomGamePage } from "./CustomGame";
 
 const makeSearchBar = (router: Router) => {
   const searchbar = new Textbox("search-username");
@@ -95,13 +96,16 @@ const makeFriendCard =
           .class(DEFAULT_BUTTON)
           .class(HOW_TO_CENTER_A_DIV)
           // TODO(Vaiva): Invite friend to play
-          .withOnclick(() => {
-            alert("Yeah sure");
-          })
+          .withOnclick(() => FriendCustomGame(f.id))
           .withId(`friends-page-invite-${i}`),
       ).class("flex flex-row gap-4 self-center"),
     ).class("p-4 h-24 w-160 flex flex-row gap-4");
   };
+
+async function FriendCustomGame(id: number) {
+  await createCustomGame(2, [id]);
+  CustomGamePage.isInDuel = true;
+}
 
 const makeFriendIncomingCard =
   (router: Router) =>
