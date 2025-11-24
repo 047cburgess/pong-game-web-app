@@ -20,6 +20,7 @@ import GameLocalPage from "./pages/GameLocal";
 import GameTournamentLocalPage from "./pages/GameTournamentLocal";
 import { CustomGamePage, gameKeys } from "./pages/CustomGame";
 import QueuePage from "./pages/Queue";
+import TwoFactorPage from "./pages/TwoFactor";
 
 export const getUsername = (): string | null => {
   return (
@@ -216,6 +217,8 @@ class App {
     this.router.addRoute("games/create", CustomGamePage);
     this.router.addRoute("games/tournament/local", GameTournamentLocalPage);
     this.router.addRoute("queue", QueuePage);
+
+    this.router.addRoute("login/two-factor", TwoFactorPage);
 
     this.router.navigate(location.pathname + location.search, false);
   }

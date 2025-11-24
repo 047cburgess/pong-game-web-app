@@ -18,6 +18,7 @@ export default class LoginPage extends Page {
   readonly passText = new Textbox("password").password();
   readonly loginButton;
   readonly oauthButton;
+  waitingSignIn = false;
 
   private loggedOn: boolean = false;
 
@@ -46,30 +47,44 @@ export default class LoginPage extends Page {
   }
 
   async trySignin() {
-    // TODO(Vaiva): Sign in handler
-    let resp;
+    // this is race condition btw
+    // but JavaScript is about writing shitty code infested with bugs
+    // so I guess this is an idiomatic way to do such checks lol
+    if (this.waitingSignIn) return;
+    this.waitingSignIn = true;
     try {
-      resp = await fetch("/api/v1/user/login", {
-        method: "POST",
-        body: JSON.stringify({
-          username: (this.userText.byId() as HTMLInputElement).value,
-          password: (this.passText.byId() as HTMLInputElement).value,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (e: any) {
-      alert("Failed to sign in" + (e && ": " + e));
-      return;
-    }
-    if (!resp.ok) {
-      const text = await resp.text();
-      alert("Failed to sign in" + (text && ": " + text));
-      return;
-    }
+      let resp;
+      try {
+        resp = await fetch("/api/v1/user/login", {
+          method: "POST",
+          body: JSON.stringify({
+            username: (this.userText.byId() as HTMLInputElement).value,
+            password: (this.passText.byId() as HTMLInputElement).value,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      } catch (e: any) {
+        alert("Failed to sign in" + (e && ": " + e));
+        return;
+      }
+      if (!resp.ok) {
+        const text = await resp.text();
+        alert("Failed to sign in" + (text && ": " + text));
+        return;
+      }
 
-    await this.loadData();
+      const data = await resp.json();
+      if (data.status === "2FA_REQUIRED") {
+        this.router.navigate("/login/two-factor");
+        return;
+      }
+
+      await this.loadData();
+    } finally {
+      this.waitingSignIn = false;
+    }
   }
 
   async callOauth() {

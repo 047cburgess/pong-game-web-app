@@ -1,9 +1,9 @@
 import { API } from "../Api";
-import { APP } from "../App";
 import Router, { Page } from "../Router";
-import { AElement, Div, Paragraph } from "./elements/Elements";
 import { paths as ApiPaths } from "../PublicAPI";
+import { AElement, Div, Paragraph } from "./elements/Elements";
 import { HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
+import { APP } from "../App";
 
 export default class GithubCallback extends Page {
   constructor(router: Router) {
@@ -25,12 +25,21 @@ export default class GithubCallback extends Page {
     try {
       resp = await API.fetch(location.pathname + location.search);
     } catch (e: any) {
-      // TODO
+      alert("Failed to process oauth callback: " + e);
       return;
     }
 
     if (!resp.ok) {
-      // TODO
+      const text = await resp.text();
+      alert("Failed to process oauth callback" + (text ? ": " + text : ""));
+      return;
+    }
+
+    const data = await resp.json();
+    console.log(data);
+
+    if (data.status === "2FA_REQUIRED") {
+      this.router.navigate("/login/two-factor");
       return;
     }
 

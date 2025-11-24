@@ -16,6 +16,7 @@ import {
   Textbox,
   Image,
   Inline,
+  Label,
 } from "./elements/Elements";
 import PageHeader from "./Header";
 
@@ -29,8 +30,12 @@ export default class SettingsPage extends Page {
     .withId("avatar-div") as Div;
   readonly fileInputId = "file-input";
   readonly fileInput: AElement = new Inline(
-    `<input id="${this.fileInputId}" type="file" name="name" style="display:none;"/>`,
+    `<input id="${this.fileInputId}" type="file" style="display:none;"/>`,
   ).withId(this.fileInputId);
+  readonly toggle2faId = "two-factor-toggle";
+  readonly toggle2fa: AElement = new Inline(
+    `<input id="${this.toggle2faId}" type="checkbox"/>`,
+  ).withId(this.toggle2faId);
 
   constructor(router: Router) {
     super(router);
@@ -65,6 +70,12 @@ export default class SettingsPage extends Page {
               .postValidation(() =>
                 this.errorsDiv(this.usernameText).redrawInner(),
               )
+              .withOnkeydown((e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  new Button().withId("save-username-btn").byId()?.click();
+                }
+              })
               .class("rounded-xs text-2xl text-center outline-1 p-1 mt-2")
               .class(INPUT_BOX_OUTLINE)
               .class("transition duration-200 ease-in-out"),
@@ -84,6 +95,17 @@ export default class SettingsPage extends Page {
         )
           .class(HOW_TO_CENTER_A_DIV)
           .class("flex flex-col"),
+
+        new Div(
+          new Label("Two factor authentication:")
+            .withOnclick(() => {
+              this.toggle2fa.byId()?.click();
+            })
+            .withId("two-factor-toggle-area"),
+          this.toggle2fa,
+        )
+          .class(HOW_TO_CENTER_A_DIV)
+          .class("flex gap-4 pb-4"),
 
         new Button(new Paragraph("Delete account").class("p-1"))
           .class(EVIL_RED_BUTTON)
@@ -126,7 +148,7 @@ export default class SettingsPage extends Page {
           alert("Failed to upload new avatar: " + e + "\nFile too large?");
         });
         if (!resp) return;
-        if (!resp.ok) {
+        if (!resp.ok && resp.status !== 304) {
           const text = await resp.text();
           alert(
             "Failed to upload new avatar: "
@@ -144,6 +166,45 @@ export default class SettingsPage extends Page {
           header.bindEvents();
         }
       };
+    }
+
+    const toggle = this.toggle2fa.byId() as HTMLInputElement | null;
+    if (toggle)
+      toggle.onchange = async (e) => {
+        const tgt = e.target as HTMLInputElement | null;
+        if (!tgt) return;
+        tgt.disabled = true;
+
+        try {
+          const resp = await fetch("/api/v1/user/two-factor", {
+            method: tgt.checked ? "PUT" : "DELETE",
+          });
+          if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(`${resp.status}${text ? ": " + text : ""}`);
+          }
+        } catch (e: any) {
+          alert("Failed to update two factor authentication state: " + e);
+          tgt.checked = !tgt.checked;
+        } finally {
+          tgt.disabled = false;
+        }
+      };
+  }
+
+  async loadData(): Promise<void> {
+    try {
+      const resp = await API.fetch("/user/two-factor");
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`${resp.status}${text ? ": " + text : ""}`);
+      }
+      const el = this.toggle2fa.byId() as void | HTMLInputElement;
+      if (!el) return;
+      el.checked = (await resp.json()).state;
+    } catch (e: any) {
+      alert("Failed to fetch 2fa state: " + e);
+      return;
     }
   }
 
