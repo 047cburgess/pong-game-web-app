@@ -88,10 +88,10 @@ export class FriendManager extends ManagerBase {
 		if (this.requests.has(request_id)) {
 			const req = this.requests.get(request_id)!;
 			const oldStatus = req.status;
+			this.updateNodes(req.sender_id, req.receiver_id, oldStatus, status);
 			req.status = status;
 			req.sender_id = sender;
 			req.receiver_id = receiver;
-			this.updateNodes(sender, receiver, oldStatus, status);
 			return;
 		}
 
@@ -130,6 +130,7 @@ export class FriendManager extends ManagerBase {
 			senderNode?.outgoingRequests.delete(receiver);
 			receiverNode?.incomingRequests.delete(sender);
 		}
+		//this.printFullState();
 	}
 	// ----------------- Accessors -----------------
 
