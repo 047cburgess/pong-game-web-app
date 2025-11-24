@@ -257,10 +257,6 @@ class App {
           }
           break;
       }
-
-      setTimeout(() => {
-        this.popupDiv.innerHTML = "";
-      }, 10000);
     } catch (err) {
       console.error("Erreur parsing SSE :", err);
     }
