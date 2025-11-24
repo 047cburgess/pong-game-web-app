@@ -93,7 +93,9 @@ export class DbManager extends ManagerBase {
 				INSERT INTO friend_requests (request_id, sender_id, receiver_id, status)
 				VALUES (?, ?, ?, ?)
 				ON CONFLICT(request_id) DO UPDATE SET
-					status = excluded.status
+   					sender_id = excluded.sender_id,
+    				receiver_id = excluded.receiver_id,
+    				status = excluded.status
 			`),
 			removeFriendRequestById: this.db.prepare(`
 				DELETE FROM friend_requests WHERE request_id = ?
@@ -160,7 +162,7 @@ export class DbManager extends ManagerBase {
 	}
 
 	saveAll() {
-		
+
 	}
 	// ================= DEBUG =================
 	printStats(): void {
