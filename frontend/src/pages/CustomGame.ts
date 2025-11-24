@@ -833,7 +833,7 @@ export class CustomGamePage extends Page {
         //this.mainContents.removeContent();
         break;
       case "finished":
-		console.log("game ended");
+        console.log("game ended");
         this.mainContents.addContent(this.EndGame_menu);
         break;
     }

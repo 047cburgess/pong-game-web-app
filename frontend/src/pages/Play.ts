@@ -257,6 +257,6 @@ export class Online_Menu extends Div {
 
   createCustom(i: number) {
     this.resetCustom();
-	createCustomGame(i);
+    createCustomGame(i);
   }
 }
