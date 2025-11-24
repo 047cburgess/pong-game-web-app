@@ -73,49 +73,45 @@ export class GameInvitePopup extends Div {
     "GameInvite-Btns-Refuse",
   ) as Button;
 
+  private mainContent: Div = new Div().withId(
+    "GameInvitePopup-maincontent",
+  ) as Div;
+
+  private sendernamePromised: Promise<string | undefined>;
   constructor(
     private router: Router,
     private gameId: string,
     private from: number,
   ) {
     super();
+    this.sendernamePromised = getSomeonesUsername(this.from);
     this.acceptBtn.withOnclick(this.onAccept.bind(this));
     this.refuseBtn.withOnclick(this.onRefuse);
-    this.senderText.text = `Sender: ${getSomeonesUsername(this.from)}`;
-
-    this.class(
-      "absolute inset-0 flex items-center justify-center popup pointer-events-auto flex flex-col ",
-    );
-
-    // Div principale contenant texte + boutons
-    this.textDiv.class(
-      "pointer-events-auto bg-zinc-900 p-6 rounded-lg w-[40vw] max-w-xl min-h-[20vh] flex flex-col justify-between",
-    );
-
-    // Titre et sous-titre
-    this.headerText.class("text-white text-2xl font-semibold");
+    this.senderText.text = `Sender: Unknown`;
+    this.class("absolute inset-0 flex items-center justify-center");
+    this.mainContent
+      .class("popup bg-black/80 backdrop-blur-md p-8 rounded-xl")
+      .class("outline outline-2 outline-pink-500 pointer-events-auto")
+      .class("flex flex-col gap-6 w-[40vw] max-w-xl");
+    this.textDiv.class("flex flex-col gap-2 w-full");
+    this.headerText.class("text-white text-2xl font-bold");
     this.senderText.class("text-white/60 text-lg");
+    this.buttonDiv.class("flex flex-row justify-end gap-4");
+    this.acceptBtn
+      .class("px-6 py-3 rounded-md border border-zinc-600 min-w-[120px]")
+      .class("hover:border-blue-500 hover:ring-2 hover:ring-blue-400")
+      .class("transition-all duration-150");
+    this.acceptBtn.addContent(new Paragraph("Accept"));
+    this.refuseBtn
+      .class("px-6 py-3 rounded-md border border-zinc-600 min-w-[120px]")
+      .class("hover:border-red-500 hover:ring-2 hover:ring-blue-400")
+      .class("transition-all duration-150");
+    this.refuseBtn.addContent(new Paragraph("Refuse"));
 
-    // Div boutons sur une *ligne*
-    this.buttonDiv.class("mt-4 flex flex-row justify-end gap-4");
-
-    // Bouton ACCEPT — bord normal, NEON bleu au hover
-    this.acceptBtn.class(
-      "px-6 py-6 rounded-md border border-zinc-600 min-w-[100px] "
-        + "hover:border-blue-500 hover:ring-2 hover:ring-blue-400 "
-        + "transition-all duration-150",
-    );
-
-    // Bouton REFUSE — bord normal, rouge uniquement au hover
-    this.refuseBtn.class(
-      "px-6 py-6 rounded-md border border-zinc-600 min-w-[100px] "
-        + "hover:border-red-500 hover:text-red-400 "
-        + "transition-all duration-150",
-    );
-
+    this.mainContent.addContent([this.textDiv, this.buttonDiv]);
     this.textDiv.addContent([this.headerText, this.senderText]);
     this.buttonDiv.addContent([this.acceptBtn, this.refuseBtn]);
-    this.contents = [this.textDiv, this.buttonDiv];
+    this.contents = [this.mainContent];
   }
 
   async onAccept() {
@@ -216,9 +212,10 @@ class App {
         case "InviteAccepted":
           break;
       }
-      setTimeout(() => {
-        this.popupDiv.innerHTML = "";
-      }, 10000);
+      /*
+			setTimeout(() => {
+			  this.popupDiv.innerHTML = "";
+			}, 10000);*/
     } catch (err) {
       console.error("Erreur parsing SSE :", err);
     }

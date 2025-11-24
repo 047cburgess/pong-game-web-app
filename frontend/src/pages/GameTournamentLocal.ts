@@ -382,7 +382,8 @@ export default class GameTournamentLocalPage extends Page {
 
     // Add placeholder text for guest inputs
     for (let i = 1; i < PLAYER_COUNT; i++) {
-      (this.playerInputs[i].byId() as HTMLInputElement).placeholder = "Enter guest alias";
+      (this.playerInputs[i].byId() as HTMLInputElement).placeholder =
+        "Enter guest alias";
     }
 
     // Focus on first guest input Player 2
@@ -413,7 +414,9 @@ export default class GameTournamentLocalPage extends Page {
     }
 
     // Check for duplicate names
-    const trimmedNames = this.playerNames.map((name) => name.trim().toLowerCase());
+    const trimmedNames = this.playerNames.map((name) =>
+      name.trim().toLowerCase(),
+    );
     const uniqueNames = new Set(trimmedNames);
     if (uniqueNames.size !== this.playerNames.length) {
       alert("Player names must be unique");
