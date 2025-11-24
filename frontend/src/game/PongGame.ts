@@ -95,6 +95,7 @@ export class PongApp {
   lastTime!: number;
 
   prevState?: GameState;
+  lastTick?: number;
   gameState!: GameState;
 
   player1!: PlayerController;
@@ -360,8 +361,8 @@ export class PongApp {
         );
         this.ball.position.x = x / DOWNSCALE;
         this.ball.position.z = y / DOWNSCALE;
+        this.lastTick = this.gameState.tick;
         for (let i = 0; i < this.params.nPlayers; i++) {
-          // TODO(vaiva)
           const ppl = this.prevState.players[i];
           const cpl = this.gameState.players[i];
           const pos = lerp(
@@ -409,6 +410,15 @@ export class PongApp {
       if (this.prevState) {
         this.tickAvg.shift();
         this.tickAvg.push(this.gameState.time - this.prevState.time);
+      }
+      if (
+        this.lastTick
+        && this.prevState
+        && this.lastTick < this.prevState.tick
+      ) {
+        this.gameState.players.forEach((p, i) => {
+          p.hitBy ||= this.prevState?.players[i].hitBy;
+        });
       }
     } else if (msg.type === "player_list") {
       console.log("Received player list:", msg.players);
