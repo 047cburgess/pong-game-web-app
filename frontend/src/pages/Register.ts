@@ -66,9 +66,13 @@ export default class RegisterPage extends Page {
       return;
     }
 
-    const url = (await resp.json()).redirectUrl;
+    const url = new URL((await resp.json()).redirectUrl);
+    url.searchParams.set(
+      "redirect_uri",
+      `${window.location.origin}/user/oauth/github/callback`,
+    );
 
-    location.href = url;
+    window.open(url, "_self");
   }
 
   async trySignup() {

@@ -233,7 +233,7 @@ export default class GameTournamentLocalPage extends Page {
     this.newTournamentBtn = new Button(
       new Paragraph("New Tournament").class("py-2 px-6"),
     )
-      .class(DEFAULT_BUTTON)
+      .class(PRIMARY_BUTTON)
       .class("hidden")
       .withId("new-tournament-btn")
       .withOnclick(() => this.resetTournament()) as Button;

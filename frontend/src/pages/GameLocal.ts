@@ -143,8 +143,7 @@ export default class GameLocalPage extends Page {
 
               new Div(
                 new Button(new Paragraph("Play Again").class("py-3 px-8"))
-                  .class(DEFAULT_BUTTON)
-                  .class("bg-green-600 hover:bg-green-700")
+                  .class(PRIMARY_BUTTON)
                   .withId("play-again-btn")
                   .withOnclick(() => {
                     this.resetGame();

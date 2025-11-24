@@ -245,6 +245,11 @@ class App {
 
   onLogout() {
     this.userInfo = null;
+    if (this.evtSource) {
+      this.evtSource.close();
+      this.evtSource = null;
+    }
+    console.log("Closed event source");
     this.reloadHeader();
   }
 

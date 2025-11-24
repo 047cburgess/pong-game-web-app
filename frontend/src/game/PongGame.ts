@@ -524,10 +524,10 @@ export class PongApp {
   // rotating camera so see themself on left from their perspective (for remote games)
   rotateCameraForPlayer(pid: number) {
     const rotations = {
-      3: 0, // No rotation needed
-      2: Math.PI, // 180
-      0: Math.PI / 2, // +90
-      1: (3 * Math.PI) / 2, // -90
+      0: 0, // No rotation needed
+      1: Math.PI, // 180
+      2: Math.PI / 2, // +90
+      3: (3 * Math.PI) / 2, // -90
     };
 
     const rotation = rotations[pid as keyof typeof rotations];

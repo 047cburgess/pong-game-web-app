@@ -53,7 +53,6 @@ export default class SettingsPage extends Page {
           )
             .class(HOW_TO_CENTER_A_DIV)
             .class("flex")
-            .withOnclick(() => this.fileInput.byId()?.click())
             .withId("upload-avatar-btn"),
           this.fileInput,
         )
