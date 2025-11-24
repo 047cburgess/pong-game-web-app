@@ -8,9 +8,6 @@ RUN npm install
 RUN npm rebuild better-sqlite3
 
 COPY . .
-
 RUN npm run build
 
-EXPOSE 3000
-
-CMD ["npm", "start"]
+CMD [ "npm", "start" ]

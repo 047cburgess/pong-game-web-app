@@ -1,13 +1,12 @@
 services:
   nginx:
-    image: nginx:1.29.3
+    build:
+      dockerfile: nginx.Dockerfile
     networks:
+      - proxy
       - transcendence
-    volumes:
-      - ./nginx_conf.d:/etc/nginx/conf.d
-      - ../frontend/frontend/dist:/usr/share/nginx/html:ro
     ports:
-      - 9999:80
+      - 8080:443
     depends_on:
       - auth-service
 
@@ -97,3 +96,6 @@ volumes:
 networks:
   transcendence:
     driver: bridge
+    internal: true
+  proxy:
+    external: false
