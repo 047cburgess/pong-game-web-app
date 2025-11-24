@@ -99,10 +99,8 @@ export class AuthManager {
 			throw ApiError.NotFound("USER_NOT_FOUND", []);
 		if (!credentials.TwoFA) {
 			credentials.TwoFA = 1;
-		} else {
-			throw ApiError.NoChange("2FA_ALREADY_ENABLED", []);
+			this.db.updateUser(userId, credentials);
 		}
-		this.db.updateUser(userId, credentials);
 	}
 
 	public async disableTwoFA(userId: number): Promise<void> {
@@ -111,10 +109,8 @@ export class AuthManager {
 			throw ApiError.NotFound("USER_NOT_FOUND", []);
 		if (credentials.TwoFA) {
 			credentials.TwoFA = 0;
-		} else {
-			throw ApiError.NoChange("2FA_ALREADY_DISABLED", []);
+			this.db.updateUser(userId, credentials);
 		}
-		this.db.updateUser(userId, credentials);
 	}
 
 

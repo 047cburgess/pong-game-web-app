@@ -99,7 +99,6 @@ export async function AuthPlugin(server: FastifyInstance) {
 		const JWTtoken = AuthManager.getInstance().login2FA(parseInt(token2FA), code);
 
 		reply.clearCookie("token2FA", {
-			path: "/user/login",
 			httpOnly: true,
 			sameSite: "strict",
 			secure: "auto",
@@ -124,7 +123,6 @@ export async function AuthPlugin(server: FastifyInstance) {
 		const { url, state } = OAuthManager.getInstance().generateRedirectUrl();
 
 		reply.setCookie("tokenOAuth", state, {
-			// path: "/user/oauth/github/callback",
 			httpOnly: true,
 			sameSite: "lax",
 			secure: false, //"auto" temp to false as browser doesnt like it
@@ -151,7 +149,6 @@ export async function AuthPlugin(server: FastifyInstance) {
 
 		const token: string = await OAuthManager.getInstance().completeGitHubLogin(accessToken);
 		reply.clearCookie("tokenOAuth", {
-			path: "/user/oauth/github/callback",
 			httpOnly: true,
 			sameSite: "lax",
 			secure: false,
