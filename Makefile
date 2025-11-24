@@ -51,8 +51,6 @@ ps:
 fclean: clean
 	@echo "$(RED)Removing images and volumes...$(NC)"
 	-$(DOCKER_COMPOSE) down --rmi all --volumes
-	@echo "$(RED)Removing node_modules...$(NC)"
-	rm -rf frontend/node_modules frontend/dist
 	@echo "$(GREEN)Full cleanup complete$(NC)"
 
 re: fclean all
