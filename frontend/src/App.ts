@@ -21,6 +21,7 @@ import GameTournamentLocalPage from "./pages/GameTournamentLocal";
 import { CustomGamePage, gameKeys } from "./pages/CustomGame";
 import QueuePage from "./pages/Queue";
 import TwoFactorPage from "./pages/TwoFactor";
+import { PRIMARY_BUTTON, DEFAULT_BUTTON } from "./pages/elements/CssUtils";
 
 export const getUsername = (): string | null => {
   return (
@@ -118,15 +119,13 @@ export class GameInvitePopup extends Div {
     this.headerText.class("text-white text-2xl font-bold");
     this.senderText.class("text-white/60 text-lg");
     this.buttonDiv.class("flex flex-row justify-end gap-4");
-    this.acceptBtn
-      .class("px-6 py-3 rounded-md border border-zinc-600 min-w-[120px]")
-      .class("hover:border-blue-500 hover:ring-2 hover:ring-blue-400")
-      .class("transition-all duration-150");
+    this.acceptBtn.class(PRIMARY_BUTTON).class("px-6 py-3");
+    //.class("hover:border-blue-500 hover:ring-2 hover:ring-blue-400")
+    //.class("transition-all duration-150");
     this.acceptBtn.addContent(new Paragraph("Accept"));
-    this.refuseBtn
-      .class("px-6 py-3 rounded-md border border-zinc-600 min-w-[120px]")
-      .class("hover:border-red-500 hover:ring-2 hover:ring-red-400")
-      .class("transition-all duration-150");
+    this.refuseBtn.class(DEFAULT_BUTTON).class("px-6 py-3");
+    //.class("hover:border-red-500 hover:ring-2 hover:ring-red-400")
+    //.class("transition-all duration-150");
     this.refuseBtn.addContent(new Paragraph("Refuse"));
 
     this.mainContent.addContent([this.textDiv, this.buttonDiv]);
