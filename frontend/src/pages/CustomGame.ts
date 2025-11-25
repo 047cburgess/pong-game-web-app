@@ -14,6 +14,7 @@ import {
   DEFAULT_BUTTON,
   DEFEAT_COLOR,
   DRAW_COLOR,
+  EVIL_RED_BUTTON,
   HOW_TO_CENTER_A_DIV,
   INPUT_BOX_OUTLINE,
   INPUT_BOX_RED_OUTLINE,
@@ -344,73 +345,73 @@ export class InviteMenu extends GameOverlay {
     this.redrawInner();
   }
 }
-
+/*
 export class GameEndMenu extends GameOverlay {
-  private finalScoresDiv = new Div()
-    .withId("final-scores")
-    .class("mb-8") as Div;
+	private finalScoresDiv = new Div()
+		.withId("final-scores")
+		.class("mb-8") as Div;
 
-  private resultParagraph: Paragraph = new Paragraph("UNKNOWN").withId(
-    "ResultParagraph",
-  ) as Paragraph;
-  private resultDiv: Div = new Div().class("mb-6 text-center") as Div;
+	private resultParagraph: Paragraph = new Paragraph("UNKNOWN").withId(
+		"ResultParagraph",
+	) as Paragraph;
+	private resultDiv: Div = new Div().class("mb-6 text-center") as Div;
 
-  private gameOverParagrpah = new Paragraph("Game Over!").class(
-    "text-4xl font-bold text-white mb-8 text-center",
-  ) as Paragraph;
+	private gameOverParagrpah = new Paragraph("Game Over!").class(
+		"text-4xl font-bold text-white mb-8 text-center",
+	) as Paragraph;
 
-  private exitButtonDiv = new Div().class("flex gap-4 justify-center");
-  private exitButton = new Button(new Paragraph("Exit").class("py-3 px-8"))
-    .class(DEFAULT_BUTTON)
-    .withId("exit-btn") as Button;
+	private exitButtonDiv = new Div().class("flex gap-4 justify-center");
+	private exitButton = new Button(new Paragraph("Exit").class("py-3 px-8"))
+		.class(DEFAULT_BUTTON)
+		.withId("exit-btn") as Button;
 
-  private main_content = new Div().withId("gameover-maindiv") as Div;
+	private main_content = new Div().withId("gameover-maindiv") as Div;
 
-  constructor(private onClick: () => any) {
-    super();
+	constructor(private onClick: () => any) {
+		super();
 
-    this.exitButton.withOnclick(this.onClick.bind(this));
-    this.main_content.addContent([
-      this.gameOverParagrpah,
-      this.finalScoresDiv,
-      this.exitButtonDiv,
-    ]);
-    this.resultDiv.addContent(this.resultParagraph);
+		this.exitButton.withOnclick(this.onClick.bind(this));
+		this.main_content.addContent([
+			this.gameOverParagrpah,
+			this.finalScoresDiv,
+			this.exitButtonDiv,
+		]);
+		this.resultDiv.addContent(this.resultParagraph);
 
-    this.contents = [this.main_content];
-  }
+		this.contents = [this.main_content];
+	}
 
-  displayFinalScores(
-    myPid: number,
-    users: UserInfo[],
-    finalScores: { pid: number; score: number }[],
-  ): void {
-    const elements: AElement[] = [];
+	displayFinalScores(
+		myPid: number,
+		users: UserInfo[],
+		finalScores: { pid: number; score: number }[],
+	): void {
+		const elements: AElement[] = [];
 
-    const rankedScores = finalScores
-      .map((data, pid) => ({ pid: pid, score: data.score }))
-      .sort((a, b) => b.score - a.score);
+		const rankedScores = finalScores
+			.map((data, pid) => ({ pid: pid, score: data.score }))
+			.sort((a, b) => b.score - a.score);
 
-    const winner = rankedScores[0];
-    const second = rankedScores[1];
-    const isDraw = winner.score === second.score;
+		const winner = rankedScores[0];
+		const second = rankedScores[1];
+		const isDraw = winner.score === second.score;
 
-    if (isDraw) {
-      {
-        this.resultParagraph.withStyle(`color : ${DRAW_COLOR};`);
-        this.resultParagraph.set_TextContent("Draw!");
-      }
-    } else if (winner.pid === myPid) {
-      this.resultParagraph.withStyle(`color : ${VICTORY_COLOR};`);
-      this.resultParagraph.set_TextContent("VICTORY!");
-    } else {
-      this.resultParagraph.withStyle(`color : ${DEFEAT_COLOR};`);
-      this.resultParagraph.set_TextContent("DEFEAT....");
-    }
-    this.finalScoresDiv.redrawInner();
-  }
+		if (isDraw) {
+			{
+				this.resultParagraph.withStyle(`color : ${DRAW_COLOR};`);
+				this.resultParagraph.set_TextContent("Draw!");
+			}
+		} else if (winner.pid === myPid) {
+			this.resultParagraph.withStyle(`color : ${VICTORY_COLOR};`);
+			this.resultParagraph.set_TextContent("VICTORY!");
+		} else {
+			this.resultParagraph.withStyle(`color : ${DEFEAT_COLOR};`);
+			this.resultParagraph.set_TextContent("DEFEAT....");
+		}
+		this.finalScoresDiv.redrawInner();
+	}
 }
-
+*/
 /*==========================================================================
 
 
@@ -467,7 +468,7 @@ export class PlayerCard extends Div {
     super();
     this.mainContents.class(bg_color);
     this.avatarImage = new Image(
-      this.playerInfo?.avatarUrl ?? "/api/v1/user/avatars/default.webp",
+      `/api/v1/user/avatars/${this.playerInfo?.username}.webp`,
     ).class("absolute z-0") as Image;
 
     this.avatarDiv = new Div(this.avatarImage).class(AVATAR_DIV) as Div;
@@ -592,6 +593,7 @@ export class CustomGamePage extends Page {
   private queueState: QueueState = "waiting";
   private free_slot: string[] = [];
   private overlayDiv: Div = new Div();
+  private finalOverlay: GameOverlay = new GameOverlay();
   private finalScoresDiv: Div = new Div();
 
   private nb_p: number;
@@ -617,7 +619,7 @@ export class CustomGamePage extends Page {
   private Invite_menu: InviteMenu = new InviteMenu(
     this.closeInvitePanel.bind(this),
   ).withId("Customgame-waitingMenu") as InviteMenu;
-  private EndGame_menu!: GameEndMenu;
+  //private EndGame_menu!: GameEndMenu;
 
   constructor(
     router: Router,
@@ -637,7 +639,7 @@ export class CustomGamePage extends Page {
     }
 
     if (CustomGamePage.isInDuel) this.startForceExitWatcher();
-    this.EndGame_menu = new GameEndMenu(this.OnExitClick.bind(this));
+    //this.EndGame_menu = new GameEndMenu(this.OnExitClick.bind(this));
     this.mainContents.addContent(this.Waiting_menu);
     this.mainContents.redrawInner();
     this.gameKey = Options as gameKeys;
@@ -812,7 +814,7 @@ export class CustomGamePage extends Page {
   private async renderQueueState() {
     this.mainContents.removeContent(this.Waiting_menu);
     this.mainContents.removeContent(this.Invite_menu);
-    this.mainContents.removeContent(this.EndGame_menu);
+    //this.mainContents.removeContent(this.EndGame_menu);
     switch (this.queueState) {
       case "inviting":
         //this.mainContents.addContent(this.Waiting_menu);
@@ -833,7 +835,9 @@ export class CustomGamePage extends Page {
         //this.mainContents.removeContent();
         break;
       case "finished":
-        this.mainContents.addContent(this.EndGame_menu);
+        this.displayFinalScores();
+        this.finalOverlay.addContent(this.finalScoresDiv);
+        this.mainContents.addContent(this.finalOverlay);
         break;
     }
     this.mainContents.bindEvents();
@@ -930,22 +934,125 @@ export class CustomGamePage extends Page {
       clearInterval((this as any).updateIntervalId);
       delete (this as any).updateIntervalId;
     }
-    const players =
+
+    const playersData =
       msg.players?.length > 0 ?
         msg.players
       : this.gameInstance?.gameState?.players;
-    if (players) {
-      this.finalScores = players.map((p: any, idx: number) => ({
-        player: idx + 1,
+
+    if (playersData) {
+      this.finalScores = playersData.map((p: any, idx: number) => ({
+        pid: p.pid !== undefined ? p.pid : idx,
         score: p.score,
       }));
     }
-    this.EndGame_menu.displayFinalScores(
-      this.gameInstance!.myPid,
-      this.IngamePlayers.map((e) => e.User),
-      this.finalScores,
-    );
+
     this.queueState = "finished";
+    this.renderQueueState();
+  }
+
+  private displayFinalScores(): void {
+    if (!this.finalScores || !this.gameInstance) return;
+
+    const myPid = this.gameInstance.myPid;
+
+    const createAvatar = (avatarUrl: string | undefined, color: string) => {
+      return avatarUrl ?
+          new Div()
+            .class("w-10 h-10 rounded-full")
+            .withStyle(
+              `background-image: url('${avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${color};`,
+            )
+        : new Div()
+            .class("w-10 h-10 rounded-full")
+            .withStyle(`background: ${color}; outline: 2px solid ${color};`);
+    };
+
+    const leaderboard = this.IngamePlayers.map((playerData) => {
+      const scoreEntry = this.finalScores.find(
+        (s: any) => s.pid === playerData.pid,
+      );
+      return {
+        pid: playerData.pid,
+        username: playerData.pid === myPid ? "You" : playerData.User.username,
+        avatar: createAvatar(
+          playerData.User.avatarUrl,
+          PLAYER_COLOURS[playerData.pid],
+        ),
+        score: scoreEntry ? scoreEntry.score : 0,
+        isMe: playerData.pid === myPid,
+      };
+    });
+
+    leaderboard.sort((a, b) => b.score - a.score);
+
+    const elements: AElement[] = [];
+    const winner = leaderboard[0];
+
+    const isDraw =
+      leaderboard.length > 1 && leaderboard[0].score === leaderboard[1].score;
+
+    if (isDraw) {
+      elements.push(
+        new Div(
+          new Paragraph("Draw!").class(
+            "text-2xl font-bold mb-2 text-yellow-400",
+          ),
+        ).class("mb-6 text-center"),
+      );
+    } else if (winner.isMe) {
+      elements.push(
+        new Div(
+          new Paragraph("You Win!")
+            .class("text-2xl font-bold mb-2")
+            .withStyle(`color: ${PLAYER_COLOURS[myPid]};`),
+        ).class("mb-6 text-center"),
+      );
+    } else {
+      elements.push(
+        new Div(
+          new Paragraph(`${winner.username} Wins!`)
+            .class("text-2xl font-bold mb-2")
+            .withStyle(`color: ${PLAYER_COLOURS[winner.pid]};`),
+        ).class("mb-6 text-center"),
+      );
+    }
+
+    leaderboard.forEach((player) => {
+      const playerColor = PLAYER_COLOURS[player.pid];
+
+      const card = new Div(
+        new Div(
+          player.avatar,
+          new Paragraph(player.username).class("text-xl font-bold text-white"),
+        ).class("flex items-center gap-4"),
+        new Paragraph(String(player.score))
+          .class("text-3xl font-bold")
+          .withStyle(`color: ${playerColor};`),
+      ).class(
+        "flex items-center justify-between p-4 bg-gray-800 rounded-lg mb-2",
+      );
+
+      elements.push(card);
+    });
+
+    elements.push(
+      new Div(
+        new Div(
+          new Paragraph("EXIT").class(
+            "text-xl items-center justify-center content-center font-bold text-white",
+          ),
+        ).class("flex items-center justify-center content-center"),
+      )
+        .class("p-2 bg-gray-800  rounded-lg mb-2 mt-6")
+        .class("hover:bg-red-800/50")
+        .withId("OngameEnd-Exit-btn")
+        .withOnclick(this.OnExitClick.bind(this)),
+    );
+
+    this.finalScoresDiv.contents = elements;
+    this.finalScoresDiv.contents.forEach((x) => x.class("min-w-90"));
+    this.finalScoresDiv.redrawInner();
   }
 
   //during game i guess
@@ -986,10 +1093,10 @@ export class CustomGamePage extends Page {
   }
 
   /*=================================================================
-			  
-								Buttons Actions
-			  
-		===================================================================*/
+			    
+								  Buttons Actions
+			    
+		  ===================================================================*/
   openInvitePanel() {
     console.log("");
     this.queueState = "inviting";
