@@ -525,6 +525,24 @@ export default class DashboardPage extends Page {
       return;
     }
 
+    try {
+      const gamesResp =
+        path === "/user" ?
+          await API.fetch("/user/games")
+        : await API.fetch(`/users/${this.userInfo.id}/games`);
+      if (!gamesResp.ok)
+        throw new Error("Hi, how are you? Nice weather innit?");
+      const gamesData =
+        (await gamesResp.json()) as ApiPaths["/users/{username}/games"]["get"]["responses"]["200"]["content"]["application/json"];
+      this.stats.lifetime.wins = gamesData.filter(
+        (x) => x.winnerId === this.userInfo!.id,
+      ).length;
+      this.stats.lifetime.losses = gamesData.filter(
+        (x) => x.winnerId && x.winnerId !== this.userInfo!.id,
+      ).length;
+      this.stats.lifetime.draws = gamesData.filter((x) => !x.winnerId).length;
+    } catch (e: any) {}
+
     await this.updateFriendsState();
 
     this.userInfoTile().redrawInner();
