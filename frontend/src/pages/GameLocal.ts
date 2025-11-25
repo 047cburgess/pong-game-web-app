@@ -33,6 +33,7 @@ export default class GameLocalPage extends Page {
   private finalScores: { player: number; score: number }[] = [];
   private gameDuration: number = 0;
   private readonly CONTROL_KEYS = ["W/S", "J/U", "T/Y", "V/B"];
+  private updateIntervalId?: number;
 
   content(): AElement[] {
     return [
@@ -385,7 +386,7 @@ export default class GameLocalPage extends Page {
   }
 
   private startUIUpdates(startTime: number): void {
-    setInterval(() => {
+    this.updateIntervalId = window.setInterval(() => {
       if (!this.gameInstance?.gameState) return;
 
       const { gameState, params } = this.gameInstance;
@@ -443,6 +444,12 @@ export default class GameLocalPage extends Page {
 
   private onGameEnd(msg: any): void {
     console.log("Game ended!", msg);
+
+    // Stop UI updates
+    if (this.updateIntervalId) {
+      clearInterval(this.updateIntervalId);
+      this.updateIntervalId = undefined;
+    }
 
     // Get final scores from message or fallback to game state
     const players =
@@ -550,6 +557,12 @@ export default class GameLocalPage extends Page {
   }
 
   private resetGame(): void {
+    // Stop UI updates interval
+    if (this.updateIntervalId) {
+      clearInterval(this.updateIntervalId);
+      this.updateIntervalId = undefined;
+    }
+
     if (this.gameInstance) {
       //ADDED: to clean up all resources
       this.gameInstance.dispose();
