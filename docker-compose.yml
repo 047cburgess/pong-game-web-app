@@ -45,9 +45,7 @@ services:
     build: ./backend/matchmaking_service
     container_name: matchmaking-service
     volumes:
-      - ./backend/matchmaking_service:/app
-      - /app/node_modules
-      - ./backend/matchmaking_service/data:/app/data
+      - matchmaking-service-data:/app/data
     networks:
       - transcendence
     environment:
@@ -59,16 +57,13 @@ services:
       - DATABASE_PATH=${MATCHMAKING_DATABASE_PATH}
       - GAME_SERVICE_URL=${GAME_SERVICE_URL}
       - SERVICE_URL=${MATCHMAKING_SERVICE_URL}
-    command: npm run dev
     depends_on:
       - game-service
+    restart: unless-stopped
 
   game-service:
     build: ./backend/game_service
     container_name: game-service
-    volumes:
-      - ./backend/game_service:/app
-      - /app/node_modules
     networks:
       - transcendence
     environment:
@@ -77,7 +72,7 @@ services:
       - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}
       - LOG_LEVEL=${LOG_LEVEL}
       - NODE_ENV=${NODE_ENV}
-    command: npm run dev
+    restart: unless-stopped
 
   user-service:
     build: 
@@ -93,6 +88,7 @@ services:
 volumes:
   user-service-data: {}
   auth-service-data: {}
+  matchmaking-service-data: {}
 
 networks:
   transcendence:
