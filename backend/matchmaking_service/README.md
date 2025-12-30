@@ -138,5 +138,5 @@ The service uses SSE for real-time push notifications to connected clients. Play
 **Connection Management:**
 - Heartbeat pings sent every 30 seconds (`:ping\n\n`)
 - Automatic cleanup on client disconnect
-- Only invited players receive notifications (not broadcast to all users)All routes require authentication via the `x-user-id` header, which is set by the reverse proxy after JWT validation
+- Only invited players receive notifications (not broadcast to all users)
 
