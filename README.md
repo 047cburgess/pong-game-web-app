@@ -97,7 +97,7 @@ make ps     # View service status
 **Auth Service** - Authentication, OAuth2, 2FA, JWT management  
 **User Service** - Profiles, friends, statistics  
 **Game Service** - Real-time game logic, physics, WebSocket state sync  
-**Matchmaking Service** - Queue management, tournaments, match history
+**Matchmaking Service** - Game coordination, Queue management, custom games, tournaments, match history
 
 ### Database Schema
 
