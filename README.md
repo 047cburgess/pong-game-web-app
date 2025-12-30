@@ -133,7 +133,7 @@ We chose the following modules to complete this project:
 This project adheres to strict requirements:
 
 - **Backend**: Fastify + Node.js only
-- **Frontend**: TypeScript + Tailwind CSS only (no React/Vue/Angular)
+- **Frontend**: SPA with TypeScript + Tailwind CSS only (no React/Vue/Angular)
 - **Database**: SQLite exclusively
 - **Philosophy**: Minimal external libraries, core features built from scratch (routing, state management, game logic)
 
