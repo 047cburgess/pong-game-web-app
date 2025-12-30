@@ -122,7 +122,7 @@ We chose the following modules to complete this project:
 - **Gameplay and UX**: Remote players
 - **Cybersecurity**: Implement 2FA and JWT
 - **Devops**: Design the backend as microservices
-- **Graphics**: Use advanced 2d techniques
+- **Graphics**: Use advanced 3d techniques
 - **Accessibility**: Expanding browser compatibility
 - **Server-Side Pong**: Replace basic Pong with server-side Pong and implement API
 
