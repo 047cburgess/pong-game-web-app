@@ -109,14 +109,6 @@ Game-Specific Manager (Queue/Custom/Tournament)
 
 The service uses Fastify's plugin system for modularity:
 
-1. **dbPlugin** - Database connection and query methods
-2. **gameServicePlugin** - HTTP client for game service communication
-3. **gameRegistryPlugin** - In-memory game tracking (routes webhooks to correct manager)
-4. **gameHistoryManagerPlugin** - Database operations for history and statistics
-5. **eventManagerPlugin** - SSE connection management and broadcasting
-6. **customGameManagerPlugin** - Custom game creation, invitations, and lifecycle
-7. **queueManagerPlugin** - Matchmaking queue pairing and game creation
-8. **tournamentManagerPlugin** - Tournament brackets, semifinals, finals coordination
 
 ### Event Flow
 
@@ -142,43 +134,6 @@ All routes require authentication via the `x-user-id` header, which is set by th
 
 The service uses SSE for real-time push notifications to connected clients. Players establish a long-lived connection via `GET /events` and receive invite notifications.
 
-### Event Types
-
-**`GameInvite`** - Invitation to join a custom game
-```json
-{
-  "event": "GameInvite",
-  "gameId": "uuid-string",
-  "from": 123
-}
-```
-
-**`InviteAccepted`** / **`InviteDeclined`** - Player response to game invitation (sent to host)
-```json
-{
-  "event": "InviteAccepted",
-  "gameId": "uuid-string",
-  "playerId": 456
-}
-```
-
-**`TournamentInvite`** - Invitation to join a tournament
-```json
-{
-  "event": "TournamentInvite",
-  "tournamentId": "uuid-string",
-  "from": 123
-}
-```
-
-**`TournamentInviteAccepted`** / **`TournamentInviteDeclined`** - Player response to tournament invitation (sent to host)
-```json
-{
-  "event": "TournamentInviteAccepted",
-  "tournamentId": "uuid-string",
-  "from": 456
-}
-```
 
 **Connection Management:**
 - Heartbeat pings sent every 30 seconds (`:ping\n\n`)
