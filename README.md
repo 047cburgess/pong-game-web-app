@@ -1,6 +1,6 @@
-# ft_transcendence
+# ft_transcendence - Multiplayer Pong Web Application
 
-A full-stack multiplayer Pong platform featuring real-time gameplay, 3D graphics, OAuth2 authentication, automated matchmaking, and tournament systems. Built with a microservices architecture as part of the 42 curriculum.
+A full-stack multiplayer Pong platform built with a microservices architecture as the final project for **Ecole 42s core curriculum**. The project was developed as a team of 3, focusing on learning fullstack design, backend services, real-time communication, and collaborative development.
 
 **Created by:** caburges, vkazanav, therodri
 
@@ -8,10 +8,11 @@ A full-stack multiplayer Pong platform featuring real-time gameplay, 3D graphics
 
 ## Features
 
-- **Gameplay**: 2-4 player Pong (local & online), local tournaments, 3D graphics
-- **Authentication**: Email/password, OAuth2 (GitHub), Two-Factor Authentication
-- **Social**: User profiles, friend system, match history, player statistics
-- **Matchmaking**: Automated queue, tournament brackets, game history
+- Real-time multiplayer gameplay (2-4 players)
+- Online, local and tournament modes
+- Quick play matchmaking system
+- Match history and player statistics
+- User authentication and profiles
 
 ---
 
@@ -30,20 +31,34 @@ A full-stack multiplayer Pong platform featuring real-time gameplay, 3D graphics
 - WebSocket for real-time communication
 - JWT + bcrypt for security
 
-### Architecture
-- **Microservices**: Auth, User, Game, Matchmaking
-- **Docker** + Docker Compose
-- **Nginx** reverse proxy
+---
+
+## Architecture
+
+The application uses a **microservices architecture** with the following services:
+
+- **User Service:** User management and profiles  
+- **Auth Service:** Authentication and authorization  
+- **Game Service:** Real-time game logic and state management  
+- **Matchmaking Service:** Queue management, game and tournament orchestration, match history  
+- **Frontend:** User interface and real-time communication  
+
+*As part of a team project, responsibilities were shared and decisions were made collaboratively.*
 
 ---
 
+## My Contributions
+
+Within the team, I focused on the **matchmaking backend service** and contributing to the microservices architecture. My work included:
+
+- Implementing the **queue system** for player matchmaking  
+- Managing **game lifecycle** (creation, start, completion)
+- Implementing **Server Side Events** for game invitations and registration  
+- Handling **tournament orchestration**  
+- Persisting **match history** in SQLite  
+- Building **RESTful APIs** for inter-service communication  
+
 ## Quick Start
-
-### Prerequisites
-
-- Docker 20.10+
-- Docker Compose 1.29+
-- GNU Make
 
 ### Installation
 
@@ -87,25 +102,6 @@ make logs   # View service logs
 make down   # Stop all services
 make ps     # View service status
 ```
-
----
-
-## Architecture
-
-### Microservices
-
-**Auth Service** - Authentication, OAuth2, 2FA, JWT management  
-**User Service** - Profiles, friends, statistics  
-**Game Service** - Real-time game logic, physics, WebSocket state sync  
-**Matchmaking Service** - Game coordination, Queue management, custom games, tournaments, match history
-
-### Database Schema
-
-Each service maintains its own SQLite database:
-
-- **authManagement.db**: User credentials, OAuth data, 2FA settings
-- **usermanagement.db**: User profiles, friend relationships
-- **matchmaking.db**: Games, tournaments, match history, player statistics
 
 ---
 
