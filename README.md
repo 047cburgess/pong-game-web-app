@@ -6,7 +6,7 @@ A full-stack multiplayer Pong platform built with a microservices architecture a
 
 ---
 
-## Features
+## 🎮 Features
 
 - Real-time multiplayer gameplay (2-4 players)
 - Online, local and tournament modes
@@ -16,7 +16,7 @@ A full-stack multiplayer Pong platform built with a microservices architecture a
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
 - TypeScript (pure, no frameworks) with custom SPA router
@@ -33,7 +33,7 @@ A full-stack multiplayer Pong platform built with a microservices architecture a
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 The application uses a **microservices architecture** with the following services:
 
@@ -47,7 +47,7 @@ The application uses a **microservices architecture** with the following service
 
 ---
 
-## My Contributions
+## 🧩 My Contributions
 
 Within the team, I focused on the **matchmaking backend service** and contributing to the microservices architecture. My work included:
 
@@ -58,7 +58,7 @@ Within the team, I focused on the **matchmaking backend service** and contributi
 - Persisting **match history** in SQLite  
 - Building **RESTful APIs** for inter-service communication  
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Installation
 
