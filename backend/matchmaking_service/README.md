@@ -1,13 +1,11 @@
-# Matchmaking Service
+# Matchmaking Service - Transcendence Pong Project
 
 The matchmaking service is responsible for managing all game-related operations and orchestration including matchmaking queues, custom games, tournaments, and game history.
 Its functionality is structured via dedicated Managers for separation of concerns and incremental development and deployment.
 
 ---
 
-## Responsibilities
-
-### Core Functions
+## ⚙️ Responsibilities
 
 - **Queue Management** - Handle online 2-player matchmaking queue
 - **Custom Games** - Enable players to create and manage private 2-4 player custom games with invitations
@@ -18,18 +16,33 @@ Its functionality is structured via dedicated Managers for separation of concern
 - **Game Registry** - Maintain active game state and lifecycle management
 - **Game Service Integration** - Communicate with the game service to start matches
 
-### Key Managers
+---
 
-- **QueueManager** - Matchmaking queue logic and pairing
-- **CustomGameManager** - Custom game creation, invitations, and lifecycle
-- **TournamentManager** - Online tournaments, handling lifecycle, bracket advancement, viewer mode
-- **GameHistoryManager** - Database operations for game records and statistics
-- **EventManager** - SSE connections and real-time event distribution
-- **GameRegistry** - Centralized active game tracking and type identification for route handlers
+## 🏗️ Architecture & Design
+
+- **Manager Pattern:** Each domain (queue, custom games, tournaments, match history) has a dedicated manager for modular development and separation of concerns:
+  - **QueueManager** – matchmaking logic  
+  - **CustomGameManager** – private games & invitations  
+  - **TournamentManager** – tournament orchestration  
+  - **GameHistoryManager** – database persistence  
+  - **EventManager** – SSE notifications  
+  - **GameRegistry** – active game tracking
+  
+---
+
+## 📚 Key Learning Outcomes
+
+- Designing and implementing **microservices** and inter-service communication  
+- Managing **real-time events** with SSE  
+- Coordinating **game state** (queues, tournaments, game lifecycle)  
+- Structuring backend code with **manager pattern** for modularity
+- **Database design** with SQLite
+- Use of Typescript and Fastify frameworks  
+- Collaborating effectively with Git and a team
 
 ---
 
-## API Documentation
+## 📖 API Documentation
 
 **OpenAPI Specifications:**
 - [Public API](./src/schemas/openapi.PublicAPI.yaml) - External endpoints (queue, games, tournaments, stats)
@@ -78,65 +91,4 @@ Its functionality is structured via dedicated Managers for separation of concern
 **Webhooks (Internal - Game Service)**
 - `POST /webhooks/games/:gameId/result` - Receive game completion data
 - `POST /webhooks/games/:gameId/abandoned` - Receive game abandonment notification
-
-## Architecture
-
-### Design Philosophy
-
-The service uses a **Manager pattern** for separation of concerns and incremental development and deployment. Each manager handles a specific domain (queue, custom games, tournaments) and operates independently while sharing common infrastructure (events, registry, database).
-
-### Manager Interactions
-
-```
-Route Handler
-    ↓
-Game-Specific Manager (Queue/Custom/Tournament)
-    ↓ coordinates
-    ├→ GameServiceClient    (start games on game service)
-    ├→ EventManager         (send SSE notifications)
-    ├→ GameRegistry         (track active games)
-    └→ GameHistoryManager   (persist results to database)
-```
-
-**Flow Example (Custom Game):**
-1. Route handler receives `POST /games/create`
-2. CustomGameManager creates game via GameServiceClient
-3. CustomGameManager registers game in GameRegistry (for routing webhooks)
-4. CustomGameManager sends invites via EventManager (SSE)
-5. When game completes, webhook → CustomGameManager → GameHistoryManager saves to DB
-
-### Fastify Plugin System
-
-The service uses Fastify's plugin system for modularity:
-
-
-### Event Flow
-
-1. **Queue Matching**
-   - Player joins queue → First player sent to a waiting game with Game Service → Second player joins the waiting game and the game begins → Result webhook → History saved
-
-2. **Custom Game**
-   - Host creates game → Sends invites → Players join → Game starts when full → Result webhook → History saved
-
-3. **Tournament**
-   - Host creates tournament → Players invited → Players accept → Semifinals played → Winners advance → Final played → Complete
-
-4. **Game Completion**
-   - Game service sends webhook → Manager processes result → Saves to database
-
-### Authentication
-
-All routes require authentication via the `x-user-id` header, which is set by the reverse proxy after JWT validation.
-
----
-
-## Server-Sent Events (SSE)
-
-The service uses SSE for real-time push notifications to connected clients. Players establish a long-lived connection via `GET /events` and receive invite notifications.
-
-
-**Connection Management:**
-- Heartbeat pings sent every 30 seconds (`:ping\n\n`)
-- Automatic cleanup on client disconnect
-- Only invited players receive notifications (not broadcast to all users)
 
