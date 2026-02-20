@@ -60,12 +60,7 @@ async function dbPlugin(fastify: FastifyInstance) {
         stmts.insertGame.run(
           game.id,
           game.mode,
-          game.tournamentId || null,## Known Limitations & Roadmap
-
-### Current Limitations
-- Desktop-optimized (mobile not implemented)
-- Online tournament UI incomplete (backend ready)
-- No production monitoring tools
+          game.tournamentId || null,
           game.winnerId || null,
           game.date.toISOString(),
           game.duration
